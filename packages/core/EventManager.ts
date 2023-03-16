@@ -4,7 +4,6 @@ import merge from "lodash/merge";
 import { v5 as uuidv5 } from "uuid";
 import type { z } from "zod";
 
-import { getCalendar } from "@calcom/app-store/_utils/getCalendar";
 import { FAKE_DAILY_CREDENTIAL } from "@calcom/app-store/dailyvideo/lib/VideoApiAdapter";
 import { getEventLocationTypeFromApp } from "@calcom/app-store/locations";
 import { MeetLocationType } from "@calcom/app-store/locations";
@@ -258,7 +257,6 @@ export default class EventManager {
 
     // There was a case that booking didn't had any reference and we don't want to throw error on function
     if (booking.references.find((reference) => reference.type.includes("_calendar"))) {
-      // Update all calendar events.
       results.push(...(await this.updateAllCalendarEvents(evt, booking, newBookingId)));
     }
 
@@ -426,27 +424,11 @@ export default class EventManager {
     let calendarReference: PartialReference | undefined = undefined,
       credential;
     try {
-      // If a newBookingId is given, update that calendar event
-      let newBooking;
-      if (newBookingId) {
-        newBooking = await prisma.booking.findUnique({
-          where: {
-            id: newBookingId,
-          },
-          select: {
-            references: true,
-          },
-        });
-      }
-
-      if (newBooking) {
-        calendarReference = newBooking.references.find((reference) => reference.type.includes("_calendar"));
-      } else {
-        // Bookings should only have one calendar reference
-        calendarReference = booking.references.find((reference) => reference.type.includes("_calendar"));
-      }
+      // Bookings should only have one calendar reference
+      calendarReference = booking.references.find((reference) => reference.type.includes("_calendar"));
 
       if (!calendarReference) {
+        console.warn("Could not find any calendar reference. Skipping calendar updates.");
         return [];
       }
       const { uid: bookingRefUid, externalCalendarId: bookingExternalCalendarId } = calendarReference;
@@ -467,22 +449,6 @@ export default class EventManager {
         );
         for (const credential of credentials) {
           result.push(updateEvent(credential, event, bookingRefUid, bookingExternalCalendarId));
-        }
-      }
-
-      // If we are merging two calendar events we should delete the old calendar event
-      if (newBookingId) {
-        const oldCalendarEvent = booking.references.find((reference) => reference.type.includes("_calendar"));
-
-        if (oldCalendarEvent?.credentialId) {
-          const calendarCredential = await prisma.credential.findUnique({
-            where: {
-              id: oldCalendarEvent.credentialId,
-            },
-          });
-          const calendar = getCalendar(calendarCredential);
-
-          await calendar?.deleteEvent(oldCalendarEvent.uid, event, oldCalendarEvent.externalCalendarId);
         }
       }
 

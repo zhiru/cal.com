@@ -156,6 +156,8 @@ export const buildCalendarEvent = (event?: Partial<CalendarEvent>): CalendarEven
     description: faker.lorem.paragraph(),
     attendees: [],
     customInputs: {},
+    responses,
+    userFieldsResponses,
     additionalNotes: faker.lorem.paragraph(),
     organizer: buildPerson(),
     videoCallData: buildVideoCallData(),

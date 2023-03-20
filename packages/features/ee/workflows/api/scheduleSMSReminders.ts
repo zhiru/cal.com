@@ -109,6 +109,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             location: reminder.booking?.location || "",
             additionalNotes: reminder.booking?.description,
             customInputs: reminder.booking?.customInputs,
+            responses,
+            userFieldsResponses,
             meetingUrl: bookingMetadataSchema.parse(reminder.booking?.metadata || {})?.videoCallUrl,
           };
           const customMessage = await customTemplate(

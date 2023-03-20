@@ -1074,6 +1074,8 @@ const loggedInViewerRouter = router({
                   title: booking.title,
                   description: booking.description,
                   customInputs: isPrismaObjOrUndefined(booking.customInputs),
+                  responses,
+                  userFieldsResponses,
                   startTime: booking.startTime.toISOString(),
                   endTime: booking.endTime.toISOString(),
                   organizer: {

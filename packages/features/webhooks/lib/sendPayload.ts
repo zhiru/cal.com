@@ -45,6 +45,8 @@ function getZapierPayload(data: CalendarEvent & EventTypeInfo & { status?: strin
     title: data.title,
     description: data.description,
     customInputs: data.customInputs,
+    responses,
+    userFieldsResponses,
     responses: data.responses,
     startTime: data.startTime,
     endTime: data.endTime,

@@ -114,6 +114,8 @@ async function handlePaymentSuccess(event: Stripe.Event) {
     startTime: booking.startTime.toISOString(),
     endTime: booking.endTime.toISOString(),
     customInputs: isPrismaObjOrUndefined(booking.customInputs),
+    responses,
+    userFieldsResponses,
     organizer: {
       email: user.email,
       name: user.name!,

@@ -2,7 +2,7 @@ import type { PrismaClient, Workflow, WorkflowsOnEventTypes, WorkflowStep } from
 import { BookingStatus, WebhookTriggerEvents } from "@prisma/client";
 
 import { scheduleTrigger } from "@calcom/app-store/zapier/lib/nodeScheduler";
-import type { EventManagerUser } from "@calcom/core/EventManager";
+import type { EventManagerContext } from "@calcom/core/EventManager";
 import EventManager from "@calcom/core/EventManager";
 import { sendScheduledEmails } from "@calcom/emails";
 import { scheduleWorkflowReminders } from "@calcom/features/ee/workflows/lib/reminders/reminderScheduler";
@@ -14,30 +14,33 @@ import type { AdditionalInformation, CalendarEvent } from "@calcom/types/Calenda
 
 const log = logger.getChildLogger({ prefix: ["[handleConfirmation] book:user"] });
 
-export async function handleConfirmation(args: {
-  user: EventManagerUser & { username: string | null };
-  evt: CalendarEvent;
-  recurringEventId?: string;
-  prisma: PrismaClient;
-  bookingId: number;
-  booking: {
-    eventType: {
-      currency: string;
-      description: string | null;
-      id: number;
-      length: number;
-      price: number;
-      requiresConfirmation: boolean;
-      title: string;
-    } | null;
-    eventTypeId: number | null;
-    smsReminderNumber: string | null;
-    userId: number | null;
-  };
-  paid?: boolean;
-}) {
-  const { user, evt, recurringEventId, prisma, bookingId, booking, paid } = args;
-  const eventManager = new EventManager(user);
+export async function handleConfirmation(
+  args: {
+    user: { username: string | null };
+    evt: CalendarEvent;
+    recurringEventId?: string;
+    prisma: PrismaClient;
+    bookingId: number;
+    booking: {
+      eventType: {
+        currency: string;
+        description: string | null;
+        id: number;
+        length: number;
+        price: number;
+        requiresConfirmation: boolean;
+        title: string;
+      } | null;
+      eventTypeId: number | null;
+      smsReminderNumber: string | null;
+      userId: number | null;
+    };
+    paid?: boolean;
+  } & EventManagerContext
+) {
+  const { user, credentials, destinationCalendar, evt, recurringEventId, prisma, bookingId, booking, paid } =
+    args;
+  const eventManager = new EventManager({ credentials, destinationCalendar });
   const scheduleResult = await eventManager.create(evt);
   const results = scheduleResult.results;
 

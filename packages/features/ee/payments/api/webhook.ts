@@ -122,7 +122,6 @@ async function handlePaymentSuccess(event: Stripe.Event) {
     },
     attendees: attendeesList,
     uid: booking.uid,
-    destinationCalendar: booking.destinationCalendar || user.destinationCalendar,
     recurringEvent: parseRecurringEvent(eventTypeRaw?.recurringEvent),
   };
 
@@ -163,7 +162,16 @@ async function handlePaymentSuccess(event: Stripe.Event) {
   await prisma.$transaction([paymentUpdate, bookingUpdate]);
 
   if (!isConfirmed && !eventTypeRaw?.requiresConfirmation) {
-    await handleConfirmation({ user, evt, prisma, bookingId: booking.id, booking, paid: true });
+    await handleConfirmation({
+      credentials: user.credentials,
+      user: { username: user.username },
+      destinationCalendar: user.destinationCalendar,
+      evt,
+      prisma,
+      bookingId: booking.id,
+      booking,
+      paid: true,
+    });
   } else {
     await sendScheduledEmails({ ...evt });
   }

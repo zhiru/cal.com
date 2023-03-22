@@ -1087,7 +1087,6 @@ const loggedInViewerRouter = router({
                   uid: booking.uid,
                   recurringEvent: parseRecurringEvent(booking.eventType?.recurringEvent),
                   location: booking.location,
-                  destinationCalendar: booking.destinationCalendar || booking.user?.destinationCalendar,
                   cancellationReason: "Payment method removed by organizer",
                 });
               }

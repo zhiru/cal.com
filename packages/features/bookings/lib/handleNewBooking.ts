@@ -785,8 +785,6 @@ async function handler(
     userFieldsResponses: calEventUserFieldsResponses,
     attendees: attendeesList,
     location: bookingLocation, // Will be processed by the EventManager later.
-    /** For team events & dynamic collective events, we will need to handle each member destinationCalendar eventually */
-    destinationCalendar: eventType.destinationCalendar || organizerUser.destinationCalendar,
     hideCalendarNotes: eventType.hideCalendarNotes,
     requiresConfirmation: requiresConfirmation ?? false,
     eventTypeId: eventType.id,
@@ -1474,11 +1472,6 @@ async function handler(
           id: organizerUser.id,
         },
       },
-      destinationCalendar: evt.destinationCalendar
-        ? {
-            connect: { id: evt.destinationCalendar.id },
-          }
-        : undefined,
     };
 
     if (reqBody.recurringEventId) {
@@ -1596,7 +1589,11 @@ async function handler(
 
   // After polling videoBusyTimes, credentials might have been changed due to refreshment, so query them again.
   const credentials = await refreshCredentials(organizerUser.credentials);
-  const eventManager = new EventManager({ ...organizerUser, credentials });
+
+  const eventManager = new EventManager({
+    credentials,
+    destinationCalendar: eventType.destinationCalendar || organizerUser.destinationCalendar,
+  });
 
   function handleAppsStatus(
     results: EventResult<AdditionalInformation>[],

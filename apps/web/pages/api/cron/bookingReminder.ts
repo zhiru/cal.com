@@ -109,7 +109,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         attendees: attendeesList,
         uid: booking.uid,
         recurringEvent: parseRecurringEvent(booking.eventType?.recurringEvent),
-        destinationCalendar: booking.destinationCalendar || user.destinationCalendar,
       };
 
       await sendOrganizerRequestReminderEmail(evt);

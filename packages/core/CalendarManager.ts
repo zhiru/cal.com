@@ -5,6 +5,7 @@ import * as process from "process";
 import { getCalendar } from "@calcom/app-store/_utils/getCalendar";
 import getApps from "@calcom/app-store/utils";
 import dayjs from "@calcom/dayjs";
+import { sendBrokenIntegrationEmail } from "@calcom/emails";
 import { getUid } from "@calcom/lib/CalEventParser";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import logger from "@calcom/lib/logger";
@@ -251,9 +252,7 @@ export const createEvent = async (
           calError = error.calError;
         }
         log.error("createEvent failed", error, calEvent);
-        // @TODO: This code will be off till we can investigate an error with it
-        //https://github.com/calcom/cal.com/issues/3949
-        // await sendBrokenIntegrationEmail(calEvent, "calendar");
+        await sendBrokenIntegrationEmail(calEvent, credential);
         return undefined;
       })
     : undefined;
@@ -294,9 +293,7 @@ export const updateEvent = async (
             return event;
           })
           .catch(async (e) => {
-            // @TODO: This code will be off till we can investigate an error with it
-            // @see https://github.com/calcom/cal.com/issues/3949
-            // await sendBrokenIntegrationEmail(calEvent, "calendar");
+            await sendBrokenIntegrationEmail(calEvent, credential);
             log.error("updateEvent failed", e, calEvent);
             if (e?.calError) {
               calError = e.calError;

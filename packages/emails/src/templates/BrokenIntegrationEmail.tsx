@@ -1,9 +1,10 @@
-import { TFunction } from "next-i18next";
+import type { TFunction } from "next-i18next";
 import { Trans } from "react-i18next";
 
 import { AppStoreLocationType } from "@calcom/app-store/locations";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
+import type { CredentialWithAppName } from "@calcom/types/Credential";
 
 import { BaseScheduledEmail } from "./BaseScheduledEmail";
 
@@ -47,61 +48,41 @@ const BrokenCalendarIntegration = (props: {
   );
 };
 
-export const BrokenIntegrationEmail = (
+export const BrokenVideoIntegrationEmail = (
   props: {
     calEvent: CalendarEvent;
     attendee: Person;
-    type: "video" | "calendar";
   } & Partial<React.ComponentProps<typeof BaseScheduledEmail>>
 ) => {
-  const { calEvent, type } = props;
-  const t = calEvent.organizer.language.translate;
-
-  if (type === "video") {
-    let location = calEvent.location ? getEnumKeyByEnumValue(AppStoreLocationType, calEvent.location) : " ";
-    if (location === "Daily") {
-      location = "Cal Video";
-    }
-    if (location === "GoogleMeet") {
-      location = location.slice(0, 5) + " " + location.slice(5);
-    }
-
-    return (
-      <BaseScheduledEmail
-        timeZone={calEvent.organizer.timeZone}
-        t={t}
-        subject={t("broken_integration")}
-        title={t("problem_adding_video_link")}
-        subtitle={<BrokenVideoIntegration location={location} eventTypeId={calEvent.eventTypeId} t={t} />}
-        headerType="xCircle"
-        {...props}
-      />
-    );
+  const { calEvent, t = calEvent.organizer.language.translate } = props;
+  let location = calEvent.location ? getEnumKeyByEnumValue(AppStoreLocationType, calEvent.location) : " ";
+  if (location === "Daily") {
+    location = "Cal Video";
+  }
+  if (location === "GoogleMeet") {
+    location = location.slice(0, 5) + " " + location.slice(5);
   }
 
-  if (type === "calendar") {
-    // The calendar name is stored as name_calendar
-    let calendar = calEvent.destinationCalendar
-      ? calEvent.destinationCalendar?.integration.split("_")
-      : "calendar";
+  return (
+    <BaseScheduledEmail
+      t={t}
+      timeZone={calEvent.organizer.timeZone}
+      subject={t("broken_integration")}
+      title={t("problem_adding_video_link")}
+      subtitle={<BrokenVideoIntegration location={location} eventTypeId={calEvent.eventTypeId} t={t} />}
+      headerType="xCircle"
+      {...props}
+    />
+  );
+};
 
-    if (Array.isArray(calendar)) {
-      const calendarCap = calendar.map((name) => name.charAt(0).toUpperCase() + name.slice(1));
-      calendar = calendarCap[0] + " " + calendarCap[1];
-    }
-
-    return (
-      <BaseScheduledEmail
-        timeZone={calEvent.organizer.timeZone}
-        t={t}
-        subject={t("broken_integration")}
-        title={t("problem_updating_calendar")}
-        subtitle={<BrokenCalendarIntegration calendar={calendar} eventTypeId={calEvent.eventTypeId} t={t} />}
-        headerType="xCircle"
-        {...props}
-      />
-    );
-  }
+export const BrokenCalendarIntegrationEmail = (
+  props: {
+    calEvent: CalendarEvent;
+    attendee: Person;
+  } & Partial<React.ComponentProps<typeof BaseScheduledEmail>>
+) => {
+  const { calEvent, t = calEvent.organizer.language.translate } = props;
 
   return (
     <BaseScheduledEmail
@@ -109,8 +90,43 @@ export const BrokenIntegrationEmail = (
       t={t}
       subject={t("broken_integration")}
       title={t("problem_updating_calendar")}
+      subtitle={
+        <BrokenCalendarIntegration
+          calendar="This is the broken calendar"
+          eventTypeId={calEvent.eventTypeId}
+          t={t}
+        />
+      }
       headerType="xCircle"
       {...props}
     />
   );
+};
+
+// Factory.
+export const BrokenIntegrationEmail = (
+  props: {
+    calEvent: CalendarEvent;
+    attendee: Person;
+    type: CredentialWithAppName["type"];
+  } & Partial<React.ComponentProps<typeof BaseScheduledEmail>>
+) => {
+  const t = props.t || props.calEvent.organizer.language.translate;
+  switch (props.type) {
+    case "video":
+      return <BrokenVideoIntegrationEmail {...props} t={t} />;
+    case "calendar":
+      return <BrokenCalendarIntegrationEmail {...props} t={t} />;
+    default:
+      return (
+        <BaseScheduledEmail
+          timeZone={props.calEvent.organizer.timeZone}
+          t={t}
+          subject={t("broken_integration")}
+          title={t("problem_updating_calendar")}
+          headerType="xCircle"
+          {...props}
+        />
+      );
+  }
 };

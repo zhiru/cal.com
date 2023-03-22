@@ -584,8 +584,6 @@ export const bookingsRouter = router({
           ),
           uid: bookingToReschedule?.uid,
           location: bookingToReschedule?.location,
-          destinationCalendar:
-            bookingToReschedule?.destinationCalendar || bookingToReschedule?.destinationCalendar,
           cancellationReason: `Please reschedule. ${cancellationReason}`, // TODO::Add i18-next for this
         };
 
@@ -668,10 +666,14 @@ export const bookingsRouter = router({
           uid: booking.uid,
           recurringEvent: parseRecurringEvent(booking.eventType?.recurringEvent),
           location,
-          destinationCalendar: booking?.destinationCalendar || booking?.user?.destinationCalendar,
         };
 
-        const eventManager = new EventManager(ctx.user);
+        const destinationCalendar =
+          booking?.destinationCalendar || booking?.user?.destinationCalendar || null;
+        const eventManager = new EventManager({
+          credentials: booking?.user?.credentials || [],
+          destinationCalendar,
+        });
 
         const updatedResult = await eventManager.updateLocation(evt, booking);
         const results = updatedResult.results;
@@ -838,7 +840,6 @@ export const bookingsRouter = router({
       attendees: attendeesList,
       location: booking.location ?? "",
       uid: booking.uid,
-      destinationCalendar: booking?.destinationCalendar || user.destinationCalendar,
       requiresConfirmation: booking?.eventType?.requiresConfirmation ?? false,
       eventTypeId: booking.eventType?.id,
     };
@@ -876,7 +877,17 @@ export const bookingsRouter = router({
     }
 
     if (confirmed) {
-      await handleConfirmation({ user, evt, recurringEventId, prisma, bookingId, booking });
+      const destinationCalendar = booking?.destinationCalendar || user.destinationCalendar;
+      await handleConfirmation({
+        user: { username: user.username },
+        credentials: user.credentials,
+        destinationCalendar,
+        evt,
+        recurringEventId,
+        prisma,
+        bookingId,
+        booking,
+      });
     } else {
       evt.rejectionReason = rejectionReason;
       if (recurringEventId) {

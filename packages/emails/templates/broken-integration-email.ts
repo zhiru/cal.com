@@ -3,38 +3,45 @@ import type { TFunction } from "next-i18next";
 import { getRichDescription } from "@calcom/lib/CalEventParser";
 import { APP_NAME } from "@calcom/lib/constants";
 import type { CalendarEvent } from "@calcom/types/Calendar";
+import type { CredentialWithAppName } from "@calcom/types/Credential";
 
 import { renderEmail } from "..";
 import BaseEmail from "./_base-email";
 
 export default class BrokenIntegrationEmail extends BaseEmail {
-  type: "calendar" | "video";
-  calEvent: CalendarEvent;
+  triggerEvent: CalendarEvent;
   t: TFunction;
+  integration: CredentialWithAppName;
 
-  constructor(calEvent: CalendarEvent, type: "calendar" | "video") {
+  constructor({
+    triggerEvent,
+    integration,
+  }: {
+    triggerEvent: CalendarEvent;
+    integration: CredentialWithAppName;
+  }) {
     super();
     this.name = "SEND_BROKEN_INTEGRATION";
-    this.calEvent = calEvent;
-    this.t = this.calEvent.organizer.language.translate;
-    this.type = type;
+    this.triggerEvent = triggerEvent;
+    this.t = this.triggerEvent.organizer.language.translate;
+    this.integration = integration;
   }
 
   protected getNodeMailerPayload(): Record<string, unknown> {
-    const toAddresses = [this.calEvent.organizer.email];
+    const toAddresses = [this.triggerEvent.organizer.email];
 
     return {
       from: `${APP_NAME} <${this.getMailerOptions().from}>`,
       to: toAddresses.join(","),
       subject: `[Action Required] ${this.t("confirmed_event_type_subject", {
-        eventType: this.calEvent.type,
-        name: this.calEvent.attendees[0].name,
+        eventType: this.triggerEvent.type,
+        name: this.triggerEvent.attendees[0].name,
         date: this.getFormattedDate(),
       })}`,
       html: renderEmail("BrokenIntegrationEmail", {
-        calEvent: this.calEvent,
-        attendee: this.calEvent.organizer,
-        type: this.type,
+        calEvent: this.triggerEvent,
+        attendee: this.triggerEvent.organizer,
+        type: this.integration.type,
       }),
       text: this.getTextBody(),
     };
@@ -48,25 +55,25 @@ export default class BrokenIntegrationEmail extends BaseEmail {
   ): string {
     return `
 ${this.t(
-  title || this.calEvent.recurringEvent?.count ? "new_event_scheduled_recurring" : "new_event_scheduled"
+  title || this.triggerEvent.recurringEvent?.count ? "new_event_scheduled_recurring" : "new_event_scheduled"
 )}
 ${this.t(subtitle)}
 ${extraInfo}
-${getRichDescription(this.calEvent)}
+${getRichDescription(this.triggerEvent)}
 ${callToAction}
 `.trim();
   }
 
   protected getTimezone(): string {
-    return this.calEvent.organizer.timeZone;
+    return this.triggerEvent.organizer.timeZone;
   }
 
   protected getOrganizerStart(format: string) {
-    return this.getRecipientTime(this.calEvent.startTime, format);
+    return this.getRecipientTime(this.triggerEvent.startTime, format);
   }
 
   protected getOrganizerEnd(format: string) {
-    return this.getRecipientTime(this.calEvent.endTime, format);
+    return this.getRecipientTime(this.triggerEvent.endTime, format);
   }
 
   protected getFormattedDate() {

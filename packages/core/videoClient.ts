@@ -80,13 +80,12 @@ const createMeeting = async (credential: CredentialWithAppName, calEvent: Calend
 
     returnObject = { ...returnObject, createdEvent: createdMeeting, success: true };
   } catch (err) {
-    await sendBrokenIntegrationEmail(calEvent, "video");
+    await sendBrokenIntegrationEmail(calEvent, credential);
     console.error("createMeeting failed", err, calEvent);
-
     // Default to calVideo
     const defaultMeeting = await createMeetingWithCalVideo(calEvent);
     if (defaultMeeting) {
-      calEvent.location = "integrations:dailyvideo";
+      calEvent.location = "integrations:daily";
     }
 
     returnObject = { ...returnObject, createdEvent: defaultMeeting };
@@ -108,7 +107,7 @@ const updateMeeting = async (
   const updatedMeeting =
     credential && bookingRef
       ? await firstVideoAdapter?.updateMeeting(bookingRef, calEvent).catch(async (e) => {
-          await sendBrokenIntegrationEmail(calEvent, "video");
+          await sendBrokenIntegrationEmail(calEvent, credential);
           log.error("updateMeeting failed", e, calEvent);
           success = false;
           return undefined;

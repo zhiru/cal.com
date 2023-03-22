@@ -102,7 +102,10 @@ export default abstract class BaseCalendarService implements Calendar {
     this.log = logger.getChildLogger({ prefix: [`[[lib] ${this.integrationName}`] });
   }
 
-  async createEvent(event: CalendarEvent): Promise<NewCalendarEventType> {
+  async createEvent(
+    event: CalendarEvent,
+    destinationCalendarIds?: string[] | string
+  ): Promise<NewCalendarEventType> {
     try {
       const calendars = await this.listCalendars(event);
 
@@ -137,9 +140,10 @@ export default abstract class BaseCalendarService implements Calendar {
       const responses = await Promise.all(
         calendars
           .filter((c) =>
-            event.destinationCalendar?.externalId
-              ? c.externalId === event.destinationCalendar.externalId
-              : true
+            (Array.isArray(destinationCalendarIds)
+              ? destinationCalendarIds
+              : [destinationCalendarIds]
+            ).includes(c.externalId)
           )
           .map((calendar) =>
             createCalendarObject({
@@ -451,9 +455,6 @@ export default abstract class BaseCalendarService implements Calendar {
           externalId: calendar.url,
           /** @url https://github.com/calcom/cal.com/issues/7186 */
           name: typeof calendar.displayName === "string" ? calendar.displayName : "",
-          primary: event?.destinationCalendar?.externalId
-            ? event.destinationCalendar.externalId === calendar.url
-            : false,
           integration: this.integrationName,
           email: this.credentials.username ?? "",
         });

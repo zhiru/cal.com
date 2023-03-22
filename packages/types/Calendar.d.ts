@@ -1,4 +1,4 @@
-import type { Prisma, DestinationCalendar, SelectedCalendar, BookingSeat } from "@prisma/client";
+import type { Prisma, SelectedCalendar, BookingSeat } from "@prisma/client";
 import type { Dayjs } from "dayjs";
 import type { calendar_v3 } from "googleapis";
 import type { Time } from "ical.js";
@@ -151,7 +151,6 @@ export interface CalendarEvent {
   videoCallData?: VideoCallData;
   paymentInfo?: PaymentInfo | null;
   requiresConfirmation?: boolean | null;
-  destinationCalendar?: DestinationCalendar | null;
   cancellationReason?: string | null;
   rejectionReason?: string | null;
   hideCalendarNotes?: boolean;

@@ -70,7 +70,10 @@ export default class GoogleCalendarService implements Calendar {
     };
   };
 
-  async createEvent(calEventRaw: CalendarEvent): Promise<NewCalendarEventType> {
+  async createEvent(
+    calEventRaw: CalendarEvent,
+    destinationCalendarId = "primary"
+  ): Promise<NewCalendarEventType> {
     const eventAttendees = calEventRaw.attendees.map(({ id, ...rest }) => ({
       ...rest,
       responseStatus: "accepted",
@@ -101,9 +104,7 @@ export default class GoogleCalendarService implements Calendar {
             id: String(calEventRaw.organizer.id),
             responseStatus: "accepted",
             organizer: true,
-            email: calEventRaw.destinationCalendar?.externalId
-              ? calEventRaw.destinationCalendar.externalId
-              : calEventRaw.organizer.email,
+            email: calEventRaw.organizer.email,
           },
           ...eventAttendees,
           ...teamMembers,
@@ -124,13 +125,11 @@ export default class GoogleCalendarService implements Calendar {
       const calendar = google.calendar({
         version: "v3",
       });
-      const selectedCalendar = calEventRaw.destinationCalendar?.externalId
-        ? calEventRaw.destinationCalendar.externalId
-        : "primary";
+
       calendar.events.insert(
         {
           auth: myGoogleAuth,
-          calendarId: selectedCalendar,
+          calendarId: destinationCalendarId,
           requestBody: payload,
           conferenceDataVersion: 1,
         },
@@ -143,7 +142,7 @@ export default class GoogleCalendarService implements Calendar {
           if (event && event.data.id && event.data.hangoutLink) {
             calendar.events.patch({
               // Update the same event but this time we know the hangout link
-              calendarId: selectedCalendar,
+              calendarId: destinationCalendarId,
               auth: myGoogleAuth,
               eventId: event.data.id || "",
               requestBody: {
@@ -170,7 +169,7 @@ export default class GoogleCalendarService implements Calendar {
     });
   }
 
-  async updateEvent(uid: string, event: CalendarEvent, externalCalendarId: string): Promise<any> {
+  async updateEvent(uid: string, event: CalendarEvent, destinationCalendarId = "primary"): Promise<any> {
     return new Promise(async (resolve, reject) => {
       const myGoogleAuth = await this.auth.getToken();
       const eventAttendees = event.attendees.map(({ id, ...rest }) => ({
@@ -224,14 +223,10 @@ export default class GoogleCalendarService implements Calendar {
         auth: myGoogleAuth,
       });
 
-      const selectedCalendar = externalCalendarId
-        ? externalCalendarId
-        : event.destinationCalendar?.externalId;
-
       calendar.events.update(
         {
           auth: myGoogleAuth,
-          calendarId: selectedCalendar,
+          calendarId: destinationCalendarId,
           eventId: uid,
           sendNotifications: true,
           sendUpdates: "all",
@@ -248,7 +243,7 @@ export default class GoogleCalendarService implements Calendar {
           if (evt && evt.data.id && evt.data.hangoutLink && event.location === MeetLocationType) {
             calendar.events.patch({
               // Update the same event but this time we know the hangout link
-              calendarId: selectedCalendar,
+              calendarId: destinationCalendarId,
               auth: myGoogleAuth,
               eventId: evt.data.id || "",
               requestBody: {
@@ -276,7 +271,7 @@ export default class GoogleCalendarService implements Calendar {
     });
   }
 
-  async deleteEvent(uid: string, event: CalendarEvent, externalCalendarId?: string | null): Promise<void> {
+  async deleteEvent(uid: string, event: CalendarEvent, destinationCalendarId = "primary"): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const myGoogleAuth = await this.auth.getToken();
       const calendar = google.calendar({
@@ -284,13 +279,10 @@ export default class GoogleCalendarService implements Calendar {
         auth: myGoogleAuth,
       });
 
-      const defaultCalendarId = "primary";
-      const calendarId = externalCalendarId ? externalCalendarId : event.destinationCalendar?.externalId;
-
       calendar.events.delete(
         {
           auth: myGoogleAuth,
-          calendarId: calendarId ? calendarId : defaultCalendarId,
+          calendarId: destinationCalendarId,
           eventId: uid,
           sendNotifications: false,
           sendUpdates: "all",

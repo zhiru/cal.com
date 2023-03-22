@@ -29,6 +29,11 @@ function parseEventTime2Timestamp(eventTime: string): string {
   return String(+new Date(eventTime) / 1000);
 }
 
+function ensureDestinationCalendarId(destinationCalendarId?: string) {
+  if (!destinationCalendarId) throw new Error("Lark Calendar requires a destinationCalendarId");
+  return destinationCalendarId;
+}
+
 export default class LarkCalendarService implements Calendar {
   private url = `https://${LARK_HOST}/open-apis`;
   private integrationName = "";
@@ -122,18 +127,18 @@ export default class LarkCalendarService implements Calendar {
     });
   };
 
-  async createEvent(event: CalendarEvent): Promise<NewCalendarEventType> {
+  async createEvent(event: CalendarEvent, destinationCalendarId?: string): Promise<NewCalendarEventType> {
+    destinationCalendarId = ensureDestinationCalendarId(destinationCalendarId);
     let eventId = "";
     let eventRespData;
-    const calendarId = event.destinationCalendar?.externalId;
-    if (!calendarId) {
-      throw new Error("no calendar id");
-    }
     try {
-      const eventResponse = await this.fetcher(`/calendar/v4/calendars/${calendarId}/events/create_event`, {
-        method: "POST",
-        body: JSON.stringify(this.translateEvent(event)),
-      });
+      const eventResponse = await this.fetcher(
+        `/calendar/v4/calendars/${destinationCalendarId}/events/create_event`,
+        {
+          method: "POST",
+          body: JSON.stringify(this.translateEvent(event)),
+        }
+      );
       eventRespData = await handleLarkError<CreateEventResp>(eventResponse, this.log);
       eventId = eventRespData.data.event.event_id as string;
     } catch (error) {
@@ -142,7 +147,7 @@ export default class LarkCalendarService implements Calendar {
     }
 
     try {
-      await this.createAttendees(event, eventId);
+      await this.createAttendees(event, eventId, destinationCalendarId);
       return {
         ...eventRespData,
         uid: eventRespData.data.event.event_id as string,
@@ -154,19 +159,14 @@ export default class LarkCalendarService implements Calendar {
       };
     } catch (error) {
       this.log.error(error);
-      await this.deleteEvent(eventId, event, calendarId);
+      await this.deleteEvent(eventId, event, destinationCalendarId);
       throw error;
     }
   }
 
-  private createAttendees = async (event: CalendarEvent, eventId: string) => {
-    const calendarId = event.destinationCalendar?.externalId;
-    if (!calendarId) {
-      this.log.error("no calendar id provided in createAttendees");
-      throw new Error("no calendar id provided in createAttendees");
-    }
+  private createAttendees = async (event: CalendarEvent, eventId: string, destinationCalendarId: string) => {
     const attendeeResponse = await this.fetcher(
-      `/calendar/v4/calendars/${calendarId}/events/${eventId}/attendees/create_attendees`,
+      `/calendar/v4/calendars/${destinationCalendarId}/events/${eventId}/attendees/create_attendees`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -184,17 +184,13 @@ export default class LarkCalendarService implements Calendar {
    * @param event
    * @returns
    */
-  async updateEvent(uid: string, event: CalendarEvent, externalCalendarId?: string) {
+  async updateEvent(uid: string, event: CalendarEvent, destinationCalendarId?: string) {
+    destinationCalendarId = ensureDestinationCalendarId(destinationCalendarId);
     const eventId = uid;
     let eventRespData;
-    const calendarId = externalCalendarId || event.destinationCalendar?.externalId;
-    if (!calendarId) {
-      this.log.error("no calendar id provided in updateEvent");
-      throw new Error("no calendar id provided in updateEvent");
-    }
     try {
       const eventResponse = await this.fetcher(
-        `/calendar/v4/calendars/${calendarId}/events/${eventId}/patch_event`,
+        `/calendar/v4/calendars/${destinationCalendarId}/events/${eventId}/patch_event`,
         {
           method: "PATCH",
           body: JSON.stringify(this.translateEvent(event)),
@@ -206,23 +202,15 @@ export default class LarkCalendarService implements Calendar {
       throw error;
     }
 
-    try {
-      // Since attendees cannot be changed any more, updateAttendees is not needed
-      // await this.updateAttendees(event, eventId);
-      return {
-        ...eventRespData,
-        uid: eventRespData.data.event.event_id as string,
-        id: eventRespData.data.event.event_id as string,
-        type: "lark_calendar",
-        password: "",
-        url: "",
-        additionalInfo: {},
-      };
-    } catch (error) {
-      this.log.error(error);
-      await this.deleteEvent(eventId, event);
-      throw error;
-    }
+    return {
+      ...eventRespData,
+      uid: eventRespData.data.event.event_id as string,
+      id: eventRespData.data.event.event_id as string,
+      type: "lark_calendar",
+      password: "",
+      url: "",
+      additionalInfo: {},
+    };
   }
 
   /**
@@ -230,14 +218,10 @@ export default class LarkCalendarService implements Calendar {
    * @param event
    * @returns
    */
-  async deleteEvent(uid: string, event: CalendarEvent, externalCalendarId?: string) {
-    const calendarId = externalCalendarId || event.destinationCalendar?.externalId;
-    if (!calendarId) {
-      this.log.error("no calendar id provided in deleteEvent");
-      throw new Error("no calendar id provided in deleteEvent");
-    }
+  async deleteEvent(uid: string, event: CalendarEvent, destinationCalendarId?: string) {
+    destinationCalendarId = ensureDestinationCalendarId(destinationCalendarId);
     try {
-      const response = await this.fetcher(`/calendar/v4/calendars/${calendarId}/events/${uid}`, {
+      const response = await this.fetcher(`/calendar/v4/calendars/${destinationCalendarId}/events/${uid}`, {
         method: "DELETE",
       });
       await handleLarkError(response, this.log);

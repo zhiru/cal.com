@@ -187,7 +187,6 @@ async function handler(req: CustomRequest) {
       ? parseRecurringEvent(bookingToDelete.eventType?.recurringEvent)
       : undefined,
     location: bookingToDelete?.location,
-    destinationCalendar: bookingToDelete?.destinationCalendar || bookingToDelete?.user.destinationCalendar,
     cancellationReason: cancellationReason,
     ...(teamMembers && { team: { name: "", members: teamMembers } }),
   };
@@ -426,12 +425,12 @@ async function handler(req: CustomRequest) {
 
   const apiDeletes = [];
 
-  const bookingCalendarReference = bookingToDelete.references.find((reference) =>
+  const bookingCalendarReferences = bookingToDelete.references.filter((reference) =>
     reference.type.includes("_calendar")
   );
 
-  if (bookingCalendarReference) {
-    const { credentialId, uid, externalCalendarId } = bookingCalendarReference;
+  for (const reference of bookingCalendarReferences) {
+    const { credentialId, uid, externalCalendarId } = reference;
     // If the booking calendar reference contains a credentialId
     if (credentialId) {
       // Find the correct calendar credential under user credentials
@@ -472,6 +471,8 @@ async function handler(req: CustomRequest) {
         });
     }
   }
+
+  console.log(apiDeletes);
 
   const bookingVideoReference = bookingToDelete.references.find((reference) =>
     reference.type.includes("_video")
@@ -516,7 +517,6 @@ async function handler(req: CustomRequest) {
       attendees: attendeesList,
       location: bookingToDelete.location ?? "",
       uid: bookingToDelete.uid ?? "",
-      destinationCalendar: bookingToDelete?.destinationCalendar || bookingToDelete?.user.destinationCalendar,
     };
 
     const successPayment = bookingToDelete.payment.find((payment) => payment.success);

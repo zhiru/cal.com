@@ -5,6 +5,7 @@ import type { EventNameObjectType } from "@calcom/core/event";
 import { getEventName } from "@calcom/core/event";
 import type BaseEmail from "@calcom/emails/templates/_base-email";
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
+import type { CredentialWithAppName } from "@calcom/types/Credential";
 
 import AttendeeAwaitingPaymentEmail from "./templates/attendee-awaiting-payment-email";
 import AttendeeCancelledEmail from "./templates/attendee-cancelled-email";
@@ -264,8 +265,8 @@ export const sendFeedbackEmail = async (feedback: Feedback) => {
   await sendEmail(() => new FeedbackEmail(feedback));
 };
 
-export const sendBrokenIntegrationEmail = async (evt: CalendarEvent, type: "video" | "calendar") => {
-  await sendEmail(() => new BrokenIntegrationEmail(evt, type));
+export const sendBrokenIntegrationEmail = async (evt: CalendarEvent, integration: CredentialWithAppName) => {
+  await sendEmail(() => new BrokenIntegrationEmail({ triggerEvent: evt, integration }));
 };
 
 export const sendDisabledAppEmail = async ({

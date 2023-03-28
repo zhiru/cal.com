@@ -1,0 +1,19 @@
+{
+  "name": "Paywong Payments",
+  "slug": "paywong-payments",
+  "type": "paywong-payments_payment",
+  "imageSrc": "icon.svg",
+  "logo": "icon.svg",
+  "url": "https://example.com/link",
+  "variant": "payment",
+  "categories": [
+    "payment"
+  ],
+  "publisher": "Paywong",
+  "email": "faris@walawong.com",
+  "description": "Start accepting crypto in minutes",
+  "extendsFeature": "EventType",
+  "isTemplate": false,
+  "__createdUsingCli": true,
+  "__template": "event-type-app-card"
+}

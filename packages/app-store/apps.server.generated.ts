@@ -29,7 +29,6 @@ export const apiHandlers = {
   office365calendar: import("./office365calendar/api"),
   office365video: import("./office365video/api"),
   "paywong-payments": import("./paywong-payments/api"),
-  paywongpayments: import("./paywongpayments/api"),
   ping: import("./ping/api"),
   pipedream: import("./pipedream/api"),
   plausible: import("./plausible/api"),

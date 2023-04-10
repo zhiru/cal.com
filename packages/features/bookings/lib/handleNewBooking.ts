@@ -1585,7 +1585,7 @@ async function handler(
       /*  note: removes custom error message about stripe */
       await prisma.credential.findFirstOrThrow({
         where: {
-          type: "stripe_payment",
+          appId: paymentAppData.appId,
           userId: organizerUser.id,
         },
         select: {

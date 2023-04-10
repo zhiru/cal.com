@@ -42,7 +42,6 @@ export const EventTypeAddonMap = {
   giphy: dynamic(() => import("./giphy/components/EventTypeAppCardInterface")),
   "google-tag-manager": dynamic(() => import("./google-tag-manager/components/EventTypeAppCardInterface")),
   "paywong-payments": dynamic(() => import("./paywong-payments/components/EventTypeAppCardInterface")),
-  paywongpayments: dynamic(() => import("./paywongpayments/components/EventTypeAppCardInterface")),
   plausible: dynamic(() => import("./plausible/components/EventTypeAppCardInterface")),
   qr_code: dynamic(() => import("./qr_code/components/EventTypeAppCardInterface")),
   rainbow: dynamic(() => import("./rainbow/components/EventTypeAppCardInterface")),

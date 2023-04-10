@@ -29,7 +29,6 @@ import n8n_config_json from "./n8n/config.json";
 import { metadata as office365calendar__metadata_ts } from "./office365calendar/_metadata";
 import office365video_config_json from "./office365video/config.json";
 import paywong_payments_config_json from "./paywong-payments/config.json";
-import paywongpayments_config_json from "./paywongpayments/config.json";
 import ping_config_json from "./ping/config.json";
 import pipedream_config_json from "./pipedream/config.json";
 import plausible_config_json from "./plausible/config.json";
@@ -93,7 +92,6 @@ export const appStoreMetadata = {
   office365calendar: office365calendar__metadata_ts,
   office365video: office365video_config_json,
   "paywong-payments": paywong_payments_config_json,
-  paywongpayments: paywongpayments_config_json,
   ping: ping_config_json,
   pipedream: pipedream_config_json,
   plausible: plausible_config_json,

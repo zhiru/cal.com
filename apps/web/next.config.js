@@ -1,5 +1,6 @@
 require("dotenv").config({ path: "../../.env" });
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const ImportTimingPlugin = require('./import-timing-plugin')
 const { withSentryConfig } = require("@sentry/nextjs");
 const os = require("os");
 
@@ -115,7 +116,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  webpack: (config, { webpack, buildId }) => {
+  webpack: (config, { webpack, buildId, isServer }) => {
     config.plugins.push(
       new CopyWebpackPlugin({
         patterns: [
@@ -138,6 +139,10 @@ const nextConfig = {
     );
 
     config.plugins.push(new webpack.DefinePlugin({ "process.env.BUILD_ID": JSON.stringify(buildId) }));
+
+    if (isServer) {
+      config.plugins.push(new ImportTimingPlugin())
+    }
 
     config.resolve.fallback = {
       ...config.resolve.fallback, // if you miss it, all the other options in fallback, specified

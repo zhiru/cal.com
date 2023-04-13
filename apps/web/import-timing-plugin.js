@@ -29,9 +29,9 @@ class ImportTimingPlugin {
                 const originalRequire = require;
                 require = function(moduleId) {
                   const moduleName = typeof moduleId === 'number' ? moduleId : moduleId.toString();
-                  console.time("require: " + moduleName + " in " + asset.name);
+                  console.time("require: " + moduleName + " in " + ${asset.name});
                   const result = originalRequire.apply(this, arguments);
-                  console.timeEnd("require: " + moduleName + " in " + asset.name);
+                  console.timeEnd("require: " + moduleName + " in " + ${asset.name});
                   return result;
                 };
               })();

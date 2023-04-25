@@ -26,7 +26,7 @@ export function EmptyCell(props: GridCellToDateProps) {
       className="group w-full"
       style={{ height: "1.75rem", overflow: "visible" }}
       onClick={() => onEmptyCellClick && onEmptyCellClick(cellToDate.toDate())}>
-      {hoverEventDuration !== 0 && (
+      {/* {hoverEventDuration !== 0 && (
         <div
           className="opacity-4 bg-subtle hover:bg-emphasis  text-emphasis absolute inset-x-1 hidden  rounded-[4px]
           border-[1px]
@@ -38,7 +38,7 @@ export function EmptyCell(props: GridCellToDateProps) {
           }}>
           <div className="overflow-ellipsis leading-4">{cellToDate.format("HH:mm")}</div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

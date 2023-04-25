@@ -174,7 +174,7 @@ const BookerComponent = ({ username, eventSlug, month, rescheduleBooking }: Book
                 layout === "large_calendar" &&
                 (bookerState === "selecting_date" || bookerState === "selecting_time")
               }
-              className="border-muted sticky top-0 ml-[-1px] h-full md:border-l"
+              className="border-muted sticky top-0 ml-[-1px] h-full p-6 pb-0 md:border-l"
               {...fadeInUp}>
               <LargeCalendar />
             </BookerSection>

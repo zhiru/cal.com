@@ -11,7 +11,6 @@ import { EventList } from "./event/EventList";
 import { SchedulerColumns } from "./grid";
 import { SchedulerHeading } from "./heading/SchedulerHeading";
 import { HorizontalLines } from "./horizontalLines";
-import { VeritcalLines } from "./verticalLines";
 
 export function Calendar(props: CalendarComponentProps) {
   const container = useRef<HTMLDivElement | null>(null);
@@ -49,12 +48,6 @@ export function Calendar(props: CalendarComponentProps) {
             style={{ width: "165%" }}
             className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full">
             <DateValues containerNavRef={containerNav} days={days} />
-            {/* TODO: Implement this at a later date. */}
-            {/* <CurrentTime
-            containerNavRef={containerNav}
-            containerOffsetRef={containerOffset}
-            containerRef={container}
-          /> */}
             <div className="flex flex-auto">
               <div className="bg-default ring-muted sticky left-0 z-10 w-14 flex-none ring-1" />
               <div className="grid flex-auto grid-cols-1 grid-rows-1 ">
@@ -63,8 +56,6 @@ export function Calendar(props: CalendarComponentProps) {
                   numberOfGridStopsPerCell={usersCellsStopsPerHour}
                   containerOffsetRef={containerOffset}
                 />
-                <VeritcalLines days={days} />
-
                 {/* Empty Cells */}
                 <SchedulerColumns
                   zIndex={50}
@@ -74,6 +65,7 @@ export function Calendar(props: CalendarComponentProps) {
                     {[...Array(days.length)].map((_, i) => (
                       <li
                         key={i}
+                        className=" border-subtle border border-r-[1px]"
                         style={{
                           gridRow: `2 / span ${numberOfGridStopsPerDay}`,
                           position: "relative",

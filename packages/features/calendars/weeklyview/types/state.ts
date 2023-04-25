@@ -1,6 +1,6 @@
-import { TimeRange } from "@calcom/types/schedule";
+import type { TimeRange } from "@calcom/types/schedule";
 
-import { CalendarEvent } from "./events";
+import type { CalendarEvent } from "./events";
 
 export type View = "month" | "week" | "day";
 export type Hours =
@@ -55,7 +55,6 @@ export type CalendarState = {
   /** @NotImplemented This in future will change the view to be daily/weekly/monthly  DAY/WEEK are supported currently however WEEK is the most adv.*/
   view?: View;
   startDate: Date;
-  /** By default we just dynamically create endDate from the viewType */
   endDate: Date;
   /**
    * Please enter events already SORTED. This is required to setup tab index correctly.

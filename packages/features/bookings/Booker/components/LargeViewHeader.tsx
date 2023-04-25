@@ -9,10 +9,7 @@ export function LargeViewHeader({ extraDays }: { extraDays: number }) {
   const layout = useBookerStore((state) => state.layout);
   const selectedDateString = useBookerStore((state) => state.selectedDate);
   const addToSelectedDate = useBookerStore((state) => state.addToSelectedDate);
-  const isLargeTimeslots = layout === "large_timeslots";
   const selectedDate = dayjs(selectedDateString);
-
-  if (!isLargeTimeslots) return null;
 
   return (
     <div className="mt-8 mb-4 flex py-2.5">

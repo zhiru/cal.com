@@ -1,3 +1,5 @@
+import { shallow } from "zustand/shallow";
+
 import dayjs from "@calcom/dayjs";
 import { Button, ButtonGroup } from "@calcom/ui";
 import { ChevronLeft, ChevronRight } from "@calcom/ui/components/icon";
@@ -5,11 +7,10 @@ import { ChevronLeft, ChevronRight } from "@calcom/ui/components/icon";
 import { useCalendarStore } from "../../state/store";
 
 export function SchedulerHeading() {
-  const { startDate, endDate, handleDateChange } = useCalendarStore((state) => ({
-    startDate: dayjs(state.startDate),
-    endDate: dayjs(state.endDate),
-    handleDateChange: state.handleDateChange,
-  }));
+  const [startDate, endDate, handleDateChange] = useCalendarStore(
+    (state) => [dayjs(state.startDate), dayjs(state.endDate), state.handleDateChange],
+    shallow
+  );
 
   return (
     <header className="flex flex-none flex-col justify-between py-4 sm:flex-row sm:items-center">
@@ -18,15 +19,6 @@ export function SchedulerHeading() {
         <span className="text-subtle">,{startDate.format("YYYY")}</span>
       </h1>
       <div className="flex items-center space-x-2 rtl:space-x-reverse">
-        {/* TODO: Renable when we have daily/mobile support */}
-        {/* <ToggleGroup
-          options={[
-            { label: "Daily", value: "day", disabled: false },
-            { label: "Weekly", value: "week", disabled: isSm },
-          ]}
-          defaultValue={view === "day" ? "day" : "week"}
-        /> */}
-
         <ButtonGroup combined>
           {/* TODO: i18n label with correct view */}
           <Button

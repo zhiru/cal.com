@@ -14,7 +14,6 @@ const middleware: NextMiddleware = async (req) => {
   const requestHeaders = new Headers(req.headers);
 
   // This console.log is required to create a report in axios for hot and cold requests
-  console.log(cold ? "Cold Start" : "Hot Start");
   requestHeaders.set("x-cal-cold-start", cold ? "true" : "false");
   cold = false;
   if (!url.pathname.startsWith("/api")) {

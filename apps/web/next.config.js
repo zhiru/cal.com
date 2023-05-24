@@ -92,7 +92,7 @@ const nextConfig = {
     ignoreDuringBuilds: !!process.env.CI,
   },
   experimental: {
-    instrumentationHook: true,
+    instrumentationHook: false,
   },
   transpilePackages: [
     "@calcom/app-store",

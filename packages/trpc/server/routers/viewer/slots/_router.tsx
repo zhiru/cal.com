@@ -4,7 +4,6 @@ import publicProcedure from "../../../procedures/publicProcedure";
 import { router } from "../../../trpc";
 import { ZGetScheduleInputSchema } from "./getSchedule.schema";
 import { ZReserveSlotInputSchema } from "./reserveSlot.schema";
-import { tracer, context } from '../../../../../lib/server/OTEL-initializer';
 
 type SlotsRouterHandlerCache = {
   getSchedule?: typeof import("./getSchedule.handler").getScheduleHandler;
@@ -16,9 +15,6 @@ const UNSTABLE_HANDLER_CACHE: SlotsRouterHandlerCache = {};
 /** This should be called getAvailableSlots */
 export const slotsRouter = router({
   getSchedule: publicProcedure.input(ZGetScheduleInputSchema).query(async ({ input, ctx }) => {
-    const span = tracer.startSpan('handler', undefined, context.active());
-    const ms = Math.floor(Math.random() * 1000);
-    span.setAttribute('getSchedule', ms);
     if (!UNSTABLE_HANDLER_CACHE.getSchedule) {
       UNSTABLE_HANDLER_CACHE.getSchedule = await import("./getSchedule.handler").then(
         (mod) => mod.getScheduleHandler
@@ -35,7 +31,6 @@ export const slotsRouter = router({
       input,
     });
 
-    span.end();
     return response;
   }),
   reserveSlot: publicProcedure.input(ZReserveSlotInputSchema).mutation(async ({ input, ctx }) => {

@@ -1,10 +1,12 @@
 import { middleware } from "../trpc";
+import { tracer, context } from '../../../../../lib/server/OTEL-initializer';
 
 const perfMiddleware = middleware(async ({ path, type, next }) => {
-  performance.mark("Start");
+  const span = tracer.startSpan(path, undefined, context.active());
+  const ms = Math.floor(Math.random() * 1000);
+  span.setAttribute(path, ms);
   const result = await next();
-  performance.mark("End");
-  performance.measure(`[${result.ok ? "OK" : "ERROR"}][$1] ${type} '${path}'`, "Start", "End");
+  span.end();
   return result;
 });
 

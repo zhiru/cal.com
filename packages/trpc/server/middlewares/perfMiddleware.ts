@@ -1,5 +1,5 @@
 import { middleware } from "../trpc";
-import { tracer, context } from '../../../../../lib/server/OTEL-initializer';
+import { tracer, context } from '../../../lib/server/OTEL-initializer';
 
 const perfMiddleware = middleware(async ({ path, type, next }) => {
   const span = tracer.startSpan(path, undefined, context.active());

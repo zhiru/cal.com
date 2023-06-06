@@ -1,32 +1,27 @@
-import Head from "next/head";
-
 import { CreateANewOrganizationForm } from "@calcom/features/ee/organizations/components";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { WizardLayout, Meta } from "@calcom/ui";
 
 import PageWrapper from "@components/PageWrapper";
-import WizardLayout from "@components/layouts/WizardLayout";
 
-const CreateNewTeamPage = () => {
+const CreateNewOrganizationPage = () => {
   const { t } = useLocale();
   return (
     <>
-      <Head>
-        <title>{t("create_new_team")}</title>
-        <meta name="description" content={t("create_new_team_description")} />
-      </Head>
+      <Meta title={t("set_up_your_organization")} description={t("organizations_description")} />
       <CreateANewOrganizationForm />
     </>
   );
 };
 const LayoutWrapper = (page: React.ReactElement) => {
   return (
-    <WizardLayout currentStep={1} maxSteps={2}>
+    <WizardLayout currentStep={1} maxSteps={5}>
       {page}
     </WizardLayout>
   );
 };
 
-CreateNewTeamPage.getLayout = LayoutWrapper;
-CreateNewTeamPage.PageWrapper = PageWrapper;
+CreateNewOrganizationPage.getLayout = LayoutWrapper;
+CreateNewOrganizationPage.PageWrapper = PageWrapper;
 
-export default CreateNewTeamPage;
+export default CreateNewOrganizationPage;

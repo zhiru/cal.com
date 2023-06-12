@@ -7,12 +7,13 @@ import type { FC } from "react";
 import { useEffect, useState, memo } from "react";
 import { z } from "zod";
 
+import { useOrgBrandingValues } from "@calcom/features/ee/organizations/hooks";
+import { subdomainSuffix } from "@calcom/features/ee/organizations/lib/orgDomains";
 import useIntercom from "@calcom/features/ee/support/lib/intercom/useIntercom";
 import { EventTypeDescriptionLazy as EventTypeDescription } from "@calcom/features/eventtypes/components";
 import CreateEventTypeDialog from "@calcom/features/eventtypes/components/CreateEventTypeDialog";
 import { DuplicateDialog } from "@calcom/features/eventtypes/components/DuplicateDialog";
 import { OrganizationEventTypeFilter } from "@calcom/features/eventtypes/components/OrganizationEventTypeFilter";
-import { useFlagMap } from "@calcom/features/flags/context/provider";
 import Shell from "@calcom/features/shell/Shell";
 import { APP_NAME, CAL_URL, WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -47,6 +48,7 @@ import {
   Skeleton,
   Label,
   VerticalDivider,
+  Alert,
 } from "@calcom/ui";
 import {
   ArrowDown,
@@ -63,9 +65,11 @@ import {
   Upload,
   Users,
   X,
+  User as UserIcon,
 } from "@calcom/ui/components/icon";
 
 import { withQuery } from "@lib/QueryCell";
+import useMeQuery from "@lib/hooks/useMeQuery";
 
 import { EmbedButton, EmbedDialog } from "@components/Embed";
 import PageWrapper from "@components/PageWrapper";
@@ -198,6 +202,7 @@ const MemoizedItem = memo(Item);
 export const EventTypeList = ({ group, groupIndex, readOnly, types }: EventTypeListProps): JSX.Element => {
   const { t } = useLocale();
   const router = useRouter();
+  const orgBranding = useOrgBrandingValues();
   const [parent] = useAutoAnimate<HTMLUListElement>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteDialogTypeId, setDeleteDialogTypeId] = useState(0);
@@ -366,7 +371,9 @@ export const EventTypeList = ({ group, groupIndex, readOnly, types }: EventTypeL
       <ul ref={parent} className="divide-subtle !static w-full divide-y" data-testid="event-types">
         {types.map((type, index) => {
           const embedLink = `${group.profile.slug}/${type.slug}`;
-          const calLink = `${CAL_URL}/${embedLink}`;
+          const calLink = `${
+            orgBranding ? `${orgBranding.slug}.${subdomainSuffix()}` : CAL_URL
+          }/${embedLink}`;
           const isManagedEventType = type.schedulingType === SchedulingType.MANAGED;
           const isChildrenManagedEventType =
             type.metadata?.managedEventConfig !== undefined && type.schedulingType !== SchedulingType.MANAGED;
@@ -830,6 +837,34 @@ const Actions = () => {
   );
 };
 
+const SetupProfileBanner = ({ closeAction }: { closeAction: () => void }) => {
+  const { t } = useLocale();
+  const orgBranding = useOrgBrandingValues();
+
+  return (
+    <Alert
+      className="my-4"
+      severity="info"
+      title={t("set_up_your_profile")}
+      message={t("set_up_your_profile_description", { orgName: orgBranding?.name })}
+      CustomIcon={UserIcon}
+      actions={
+        <div className="flex gap-1">
+          <Button color="minimal" className="text-sky-700 hover:bg-sky-100" onClick={closeAction}>
+            {t("dismiss")}
+          </Button>
+          <Button
+            color="secondary"
+            className="border-sky-700 bg-sky-50 text-sky-700 hover:border-sky-900 hover:bg-sky-200"
+            href="/getting-started">
+            {t("set_up")}
+          </Button>
+        </div>
+      }
+    />
+  );
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const WithQuery = withQuery(trpc.viewer.eventTypes.getByViewer as any);
 
@@ -838,13 +873,14 @@ const EventTypesPage = () => {
   const router = useRouter();
   const { open } = useIntercom();
   const { query } = router;
-  const flags = useFlagMap();
+  const { data: user } = useMeQuery();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [showOrgsBanner, setShowOrgsBanner] = useState(false);
+  const [showProfileBanner, setShowProfileBanner] = useState(false);
+  const orgBranding = useOrgBrandingValues();
 
   function closeBanner() {
-    setShowOrgsBanner(false);
-    document.cookie = `calcom-org-banner=1;max-age=${60 * 60 * 24 * 90}`; // 3 months
+    setShowProfileBanner(false);
+    document.cookie = `calcom-profile-banner=1;max-age=${60 * 60 * 24 * 90}`; // 3 months
     showToast(t("we_wont_show_again"), "success");
   }
 
@@ -852,7 +888,9 @@ const EventTypesPage = () => {
     if (query?.openIntercom && query?.openIntercom === "true") {
       open();
     }
-    setShowOrgsBanner(flags.organizations && !document.cookie.includes("calcom-org-banner=1"));
+    setShowProfileBanner(
+      !!orgBranding && !document.cookie.includes("calcom-profile-banner=1") && !user?.completedOnboarding
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -868,6 +906,7 @@ const EventTypesPage = () => {
         hideHeadingOnMobile
         TopNavContainer={showOrgsBanner && <SetupOrganizationBanner closeAction={closeBanner} />}
         subtitle={t("event_types_page_subtitle")}
+        afterHeading={showProfileBanner && <SetupProfileBanner closeAction={closeBanner} />}
         beforeCTAactions={<Actions />}
         CTA={<CTA />}>
         <WithQuery

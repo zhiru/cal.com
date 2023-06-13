@@ -6,7 +6,6 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
-import { useOrgBrandingValues } from "@calcom/features/ee/organizations/hooks";
 import { getLayout } from "@calcom/features/settings/layouts/SettingsLayout";
 import { FULL_NAME_LENGTH_MAX_LIMIT } from "@calcom/lib/constants";
 import { APP_NAME } from "@calcom/lib/constants";
@@ -81,7 +80,6 @@ const ProfileView = () => {
   const utils = trpc.useContext();
   const { data: user, isLoading } = trpc.viewer.me.useQuery();
   const { data: avatar, isLoading: isLoadingAvatar } = trpc.viewer.avatar.useQuery();
-  const orgBranding = useOrgBrandingValues();
   const mutation = trpc.viewer.updateProfile.useMutation({
     onSuccess: () => {
       showToast(t("settings_updated_successfully"), "success");
@@ -217,7 +215,6 @@ const ProfileView = () => {
         extraField={
           <div className="mt-8">
             <UsernameAvailabilityField
-              user={user}
               onSuccessMutation={async () => {
                 showToast(t("settings_updated_successfully"), "success");
                 await utils.viewer.me.invalidate();
@@ -225,7 +222,6 @@ const ProfileView = () => {
               onErrorMutation={() => {
                 showToast(t("error_updating_settings"), "error");
               }}
-              organization={orgBranding ?? null}
             />
           </div>
         }

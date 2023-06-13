@@ -59,6 +59,13 @@ async function getEmailsToInvite(usernameOrEmail: string | string[]) {
       message: "You must provide at least one email address to invite.",
     });
 
+  for (const usernameOrEmail of emailsToInvite) {
+    const invitee = await prisma.user.findFirst({
+      where: {
+        OR: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+      },
+    });
+
   return emailsToInvite;
 }
 

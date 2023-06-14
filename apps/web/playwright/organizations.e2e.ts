@@ -4,6 +4,8 @@ import { totp } from "otplib";
 
 import { test } from "./lib/fixtures";
 
+test.use({ baseURL: "http://app.cal.local:3000/" });
+
 test.describe.configure({ mode: "serial" });
 
 test.afterEach(({ users }) => users.deleteAll());
@@ -41,6 +43,10 @@ test.describe("Organizations v1", () => {
         await page.locator("input[name='2fa1']").fill(generateCode("john@acme.com"));
         await page.locator("button:text('Verify')").click();
         await page.waitForURL("/settings/organizations/*/set-password");
+        await page.locator("button[type=submit]").click();
+        await expect(page.locator(".text-red-700")).toHaveCount(3);
+        await page.locator("input[name='password']").fill("ADMIN_user2023$");
+        await page.locator("button[type=submit]").click();
       });
     });
   });

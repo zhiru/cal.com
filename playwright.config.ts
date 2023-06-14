@@ -79,6 +79,7 @@ const config: PlaywrightTestConfig = {
       name: "@calcom/web",
       testDir: "./apps/web/playwright",
       testMatch: /.*\.e2e\.tsx?/,
+      testIgnore: /organizations.*\.e2e\.ts/,
       expect: {
         timeout: DEFAULT_EXPECT_TIMEOUT,
       },
@@ -86,6 +87,20 @@ const config: PlaywrightTestConfig = {
         ...devices["Desktop Chrome"],
         /** If navigation takes more than this, then something's wrong, let's fail fast. */
         navigationTimeout: DEFAULT_NAVIGATION_TIMEOUT,
+      },
+    },
+    {
+      name: "@calcom/web--organizations",
+      testDir: "./apps/web/playwright",
+      testMatch: /organizations\.*\.e2e\.ts/,
+      expect: {
+        timeout: DEFAULT_EXPECT_TIMEOUT,
+      },
+      use: {
+        ...devices["Desktop Chrome"],
+        /** If navigation takes more than this, then something's wrong, let's fail fast. */
+        navigationTimeout: DEFAULT_NAVIGATION_TIMEOUT,
+        baseURL: "http://app.cal.local:3000/",
       },
     },
     {

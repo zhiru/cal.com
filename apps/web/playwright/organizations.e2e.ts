@@ -32,15 +32,17 @@ test.describe("Organizations v1", () => {
       await expect(page.locator(".text-red-700")).toHaveCount(3);
 
       // happy path
-      await page.locator("input[name=adminEmail]").fill("john@acme.com");
-      expect(await page.locator("input[name=name]").inputValue()).toEqual("Acme");
-      expect(await page.locator("input[name=slug]").inputValue()).toEqual("acme");
+      await page.locator("input[name=adminEmail]").fill(`john@${user.username}-org.com`);
+      expect(await page.locator("input[name=name]").inputValue()).toEqual(
+        `${user.username}-org`.charAt(0).toUpperCase() + `${user.username}-org`.slice(1)
+      );
+      expect(await page.locator("input[name=slug]").inputValue()).toEqual(`${user.username}-org`);
 
       await test.step("Verification", async () => {
         await page.locator("button[type=submit]").click();
         await page.waitForLoadState("networkidle");
         await expect(page.locator("#modal-title")).toBeVisible();
-        await page.locator("input[name='2fa1']").fill(generateCode("john@acme.com"));
+        await page.locator("input[name='2fa1']").fill(generateCode(`john@${user.username}-org.com`));
         await page.locator("button:text('Verify')").click();
         await page.waitForURL("/settings/organizations/*/set-password");
         await page.locator("button[type=submit]").click();

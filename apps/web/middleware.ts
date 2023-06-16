@@ -25,6 +25,7 @@ const middleware: NextMiddleware = async (req) => {
    */
   // Enable New Booker for All but embed Requests
   if (process.env.NEW_BOOKER_ENABLED_FOR_NON_EMBED === "1" && !isEmbedRequest) {
+    console.log("Added header", "new-booker-enabled");
     requestHeaders.set("new-booker-enabled", "1");
   }
 

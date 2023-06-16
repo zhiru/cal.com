@@ -4,10 +4,14 @@ import { useEffect, useState } from "react";
 import { COMPANY_NAME, IS_SELF_HOSTED } from "@calcom/lib/constants";
 import pkg from "@calcom/web/package.json";
 
+// eslint-disable-next-line turbo/no-undeclared-env-vars
 const gitCommitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ?? "unknown";
 
 export const CalComVersion = `${
-  process.env.VERCEL_ENV === "production" ? `v.${pkg.version}` : `sha.${gitCommitSha.substring(0, 5)}`
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
+  process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
+    ? `v.${pkg.version}`
+    : `sha.${gitCommitSha.substring(0, 5)}`
 }-${!IS_SELF_HOSTED ? "h" : "sh"}`;
 
 export default function Credits() {

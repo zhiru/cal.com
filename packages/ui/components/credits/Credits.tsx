@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { COMPANY_NAME, IS_SELF_HOSTED } from "@calcom/lib/constants";
 import pkg from "@calcom/web/package.json";
 
-export const CalComVersion = `v.${pkg.version}-${!IS_SELF_HOSTED ? "h" : "sh"}`;
+const gitCommitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ?? "unknown";
+
+export const CalComVersion = `${
+  process.env.VERCEL_ENV === "production" ? `v.${pkg.version}` : `sha.${gitCommitSha.substring(0, 5)}`
+}-${!IS_SELF_HOSTED ? "h" : "sh"}`;
 
 export default function Credits() {
   const [hasMounted, setHasMounted] = useState(false);

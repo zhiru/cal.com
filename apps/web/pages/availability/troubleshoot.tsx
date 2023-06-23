@@ -1,3 +1,6 @@
+import type { TFunction } from "next-i18next";
+import { useState } from "react";
+
 import dayjs from "@calcom/dayjs";
 import { Calendar } from "@calcom/features/calendars/weeklyview";
 import Shell from "@calcom/features/shell/Shell";
@@ -19,24 +22,34 @@ export interface IBusySlot {
   source?: string | null;
 }
 
-const CalendarView = ({ user }: { user: User }) => {
+interface AvailabilityOptions {
+  label: string;
+  value: string;
+  isDefault?: boolean;
+}
+
+const AvailabilitySelector = ({ t }: { t: TFunction }) => {
+  const [options, setOptions] = useState<AvailabilityOptions[]>();
+
+  const { data: availability, isLoading } = trpc.viewer.availability.list.useQuery();
+
+  if (isLoading) return <SkeletonText />;
+
   return (
-    <div className="grid max-w-full grid-cols-3 overflow-clip">
-      <div className="col-span-1">
-        <p>Availabilities</p>
-        <SelectField
-          label="Availabilites"
-          options={[
-            { label: "Week", value: "week" },
-            { label: "Month", value: "month" },
-          ]}
-        />
-      </div>
-      <div className="col-span-2">
-        <Calendar startDate={new Date()} endDate={new Date("2023-06-28T19:29:46Z")} events={[]} />
-      </div>
-    </div>
+    <SelectField
+      label={t("availability")}
+      defaultValue={availability?.schedules.filter((schedule) => schedule.isDefault)}
+      options={
+        availability?.schedules.map((schedule) => ({ label: schedule.name, value: schedule.id })) || []
+      }
+    />
   );
+};
+
+const CalendarView = () => {
+  const { t } = useLocale();
+
+  return <Calendar startDate={new Date()} endDate={new Date("2023-06-28T19:29:46Z")} events={[]} />;
 };
 
 const AvailabilityView = ({ user }: { user: User }) => {
@@ -139,13 +152,19 @@ const AvailabilityView = ({ user }: { user: User }) => {
 };
 
 export default function Troubleshoot() {
-  const { data, isLoading } = trpc.viewer.me.useQuery();
+  // const { data, isLoading } = trpc.viewer.me.useQuery();
   const { t } = useLocale();
   return (
     <div>
       <Shell heading={t("troubleshoot")} hideHeadingOnMobile subtitle={t("troubleshoot_description")}>
-        {!isLoading && data && <CalendarView user={data} />}
-        {/* <Calendar startDate={new Date()} endDate={new Date("2023-06-28T19:29:46Z")} events={[]} /> */}
+        <div className="grid max-w-full grid-cols-3 overflow-clip">
+          <div className="col-span-1 px-1">
+            <AvailabilitySelector t={t} />
+          </div>
+          <div className="col-span-2">
+            <CalendarView />
+          </div>
+        </div>
       </Shell>
     </div>
   );

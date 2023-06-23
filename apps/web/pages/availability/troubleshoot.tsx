@@ -1,9 +1,10 @@
 import dayjs from "@calcom/dayjs";
+import { Calendar } from "@calcom/features/calendars/weeklyview";
 import Shell from "@calcom/features/shell/Shell";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
-import { SkeletonText } from "@calcom/ui";
+import { SkeletonText, SelectField } from "@calcom/ui";
 
 import useRouterQuery from "@lib/hooks/useRouterQuery";
 
@@ -17,6 +18,26 @@ export interface IBusySlot {
   title?: string;
   source?: string | null;
 }
+
+const CalendarView = ({ user }: { user: User }) => {
+  return (
+    <div className="grid max-w-full grid-cols-3 overflow-clip">
+      <div className="col-span-1">
+        <p>Availabilities</p>
+        <SelectField
+          label="Availabilites"
+          options={[
+            { label: "Week", value: "week" },
+            { label: "Month", value: "month" },
+          ]}
+        />
+      </div>
+      <div className="col-span-2">
+        <Calendar startDate={new Date()} endDate={new Date("2023-06-28T19:29:46Z")} events={[]} />
+      </div>
+    </div>
+  );
+};
 
 const AvailabilityView = ({ user }: { user: User }) => {
   const { t } = useLocale();
@@ -123,7 +144,8 @@ export default function Troubleshoot() {
   return (
     <div>
       <Shell heading={t("troubleshoot")} hideHeadingOnMobile subtitle={t("troubleshoot_description")}>
-        {!isLoading && data && <AvailabilityView user={data} />}
+        {!isLoading && data && <CalendarView user={data} />}
+        {/* <Calendar startDate={new Date()} endDate={new Date("2023-06-28T19:29:46Z")} events={[]} /> */}
       </Shell>
     </div>
   );

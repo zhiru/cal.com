@@ -315,6 +315,12 @@ const nextConfig = {
        */
     ];
 
+    console.log({
+      ORGANIZATIONS_ENABLED: process.env.ORGANIZATIONS_ENABLED,
+      beforeFiles,
+      afterFiles,
+    });
+
     // Enable New Booker for all Embed Requests
     if (process.env.NEW_BOOKER_ENABLED_FOR_EMBED === "1") {
       console.log("Enabling New Booker for Embed");

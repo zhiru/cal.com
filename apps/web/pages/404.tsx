@@ -52,6 +52,9 @@ export default function Custom404() {
   useEffect(() => {
     const { isValidOrgDomain, currentOrgDomain } = orgDomainConfig(window.location.host);
     const [routerUsername] = router.asPath.replace("%20", "-").split(/[?#]/);
+    console.log("404Page", {
+      asPath: router.asPath,
+    });
     if (!isValidOrgDomain || !currentOrgDomain) {
       const splitPath = routerUsername.split("/");
       if (splitPath[1] === "team" && splitPath.length === 3) {

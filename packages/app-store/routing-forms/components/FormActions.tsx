@@ -82,13 +82,13 @@ function NewFormDialog({ appUrl }: { appUrl: string }) {
     name: z.string().trim().min(1, t("required")),
     description: z.string().optional(),
     shouldConnect: z.boolean().optional(),
-  })
+  });
 
   const hookForm = useForm<{
     name: string;
     description: string;
     shouldConnect: boolean;
-  }>({resolver: zodResolver(formDataSchema)});
+  }>({ resolver: zodResolver(formDataSchema) });
 
   const { action, target } = router.query as z.infer<typeof newFormModalQuerySchema>;
 

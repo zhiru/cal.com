@@ -93,9 +93,12 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
 }
 
 async function getUserPageProps(context: GetServerSidePropsContext) {
-  const { user: username, type: slug } = paramsSchema.parse(context.params);
+  const { user: uname, type: slug } = paramsSchema.parse(context.params);
   const { rescheduleUid } = context.query;
   const { currentOrgDomain, isValidOrgDomain } = orgDomainConfig(context.req.headers.host ?? "");
+
+  /** TODO: We should standarize this */
+  const username = uname.toLowerCase().replace(/( |%20)/g, "+");
 
   const { ssrInit } = await import("@server/lib/ssr");
   const ssr = await ssrInit(context);
@@ -154,7 +157,7 @@ const paramsSchema = z.object({ type: z.string(), user: z.string() });
 // whether the page should show an away state or dynamic booking not allowed.
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const { user } = paramsSchema.parse(context.params);
-  const isDynamicGroup = user.includes("+");
+  const isDynamicGroup = getUsernameList(user).length > 1;
 
   return isDynamicGroup ? await getDynamicGroupPageProps(context) : await getUserPageProps(context);
 };

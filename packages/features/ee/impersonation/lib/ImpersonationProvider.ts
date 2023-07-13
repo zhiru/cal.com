@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { getSession } from "@calcom/features/auth/lib/getSession";
 import prisma from "@calcom/prisma";
+import type { Prisma } from "@calcom/prisma/client";
 
 const teamIdschema = z.object({
   teamId: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().positive()),
@@ -66,6 +67,18 @@ export function checkPermission(session: Session | null) {
     throw new Error("You do not have permission to do this.");
   }
 }
+export const isEmail = (str: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+
+export function getUserInfo(usernameRaw: string) {
+  // if its an email address, return the email address
+  if (isEmail(usernameRaw)) return { username: undefined, email: usernameRaw, org: undefined };
+  // split username on : to get org:username
+  const splitUsername = usernameRaw.split(":");
+  const org = splitUsername.length > 1 ? splitUsername[0] : undefined;
+  const username = splitUsername.length > 1 ? splitUsername[1] : splitUsername[0];
+
+  return { org, username, email: undefined };
+}
 
 const ImpersonationProvider = CredentialsProvider({
   id: "impersonation-auth",
@@ -80,15 +93,39 @@ const ImpersonationProvider = CredentialsProvider({
     // @ts-ignore need to figure out how to correctly type this
     const session = await getSession({ req });
     const teamId = parseTeamId(creds);
+    const userInfo = getUserInfo(creds?.username as string);
     checkSelfImpersonation(session, creds);
-    checkUserIdentifier(creds);
+    checkUserIdentifier(userInfo);
     checkPermission(session);
+
+    let findUserWhere: Prisma.UserWhereInput = {
+      OR: [{ username: creds?.username }, { email: creds?.username }],
+    };
+
+    if (userInfo.org) {
+      const orgFound = await prisma.team.findFirst({
+        where: {
+          slug: userInfo.org,
+          metadata: {
+            path: ["isOrganization"],
+            equals: true,
+          },
+        },
+      });
+
+      if (!orgFound) {
+        throw new Error("Organization not found");
+      }
+
+      findUserWhere = {
+        organizationId: orgFound.id,
+        username: userInfo?.username,
+      };
+    }
 
     // Get user who is being impersonated
     const impersonatedUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ username: creds?.username }, { email: creds?.username }],
-      },
+      where: findUserWhere,
       select: {
         id: true,
         username: true,

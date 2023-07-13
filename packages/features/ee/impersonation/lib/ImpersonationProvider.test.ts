@@ -8,6 +8,7 @@ import {
   checkSelfImpersonation,
   checkUserIdentifier,
   checkPermission,
+  getUserInfo,
 } from "./ImpersonationProvider";
 
 const session: Session = {
@@ -77,5 +78,24 @@ describe("checkPermission", () => {
   it("should not throw an error if the user is not an admin but team impersonation is enabled", () => {
     process.env.NEXT_PUBLIC_TEAM_IMPERSONATION = "true";
     expect(() => checkPermission(session)).not.toThrow();
+  });
+});
+describe("getUserInfo", () => {
+  it("should return an object with email if the input is an email address", () => {
+    const input = "test@example.com";
+    const expectedOutput = { username: undefined, email: input, org: undefined };
+    expect(getUserInfo(input)).toEqual(expectedOutput);
+  });
+
+  it("should return an object with org and username if the input is in the format org:username", () => {
+    const input = "acme:john.doe";
+    const expectedOutput = { org: "acme", username: "john.doe", email: undefined };
+    expect(getUserInfo(input)).toEqual(expectedOutput);
+  });
+
+  it("should return an object with only username if the input is not in the format org:username", () => {
+    const input = "john.doe";
+    const expectedOutput = { org: undefined, username: "john.doe", email: undefined };
+    expect(getUserInfo(input)).toEqual(expectedOutput);
   });
 });

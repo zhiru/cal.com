@@ -1,3 +1,4 @@
+import { WEBAPP_URL } from "@calcom/lib/constants";
 import { isOrganisationAdmin } from "@calcom/lib/server/queries/organisations";
 import { prisma } from "@calcom/prisma";
 import { teamMetadataSchema } from "@calcom/prisma/zod-utils";
@@ -40,6 +41,8 @@ export const listHandler = async ({ ctx }: ListOptions) => {
       accepted: membership.accepted,
       isOrgAdmin,
       ..._team,
+      // Prevents huge payloads
+      logo: `${WEBAPP_URL}/${_team.slug}/avatar.png`,
       /** To prevent breaking we only return non-email attached token here, if we have one */
       inviteToken: inviteTokens.find((token) => token.identifier === "invite-link-for-teamId-" + _team.id),
     }));
@@ -68,6 +71,8 @@ export const listHandler = async ({ ctx }: ListOptions) => {
       role: membership.role,
       accepted: membership.accepted,
       ..._team,
+      // Prevents huge payloads
+      logo: `${WEBAPP_URL}/${_team.slug}/avatar.png`,
       /** To prevent breaking we only return non-email attached token here, if we have one */
       inviteToken: inviteTokens.find((token) => token.identifier === "invite-link-for-teamId-" + _team.id),
     }));

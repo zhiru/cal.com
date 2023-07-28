@@ -2,6 +2,7 @@ import { decodeHTML } from "entities";
 import { createTransport } from "nodemailer";
 import { z } from "zod";
 
+import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import { getFeatureFlagMap } from "@calcom/features/flags/server/utils";
 import { getErrorFromUnknown } from "@calcom/lib/errors";
@@ -19,12 +20,12 @@ export default class BaseEmail {
     return "";
   }
 
-  protected getLocale(): string {
-    return "";
-  }
-
-  protected getFormattedRecipientTime({ time, format }: { time: string; format: string }) {
-    return dayjs(time).tz(this.getTimezone()).locale(this.getLocale()).format(format);
+  protected getRecipientTime(time: string): Dayjs;
+  protected getRecipientTime(time: string, format: string): string;
+  protected getRecipientTime(time: string, format?: string) {
+    const date = dayjs(time).tz(this.getTimezone());
+    if (typeof format === "string") return date.format(format);
+    return date;
   }
 
   protected getNodeMailerPayload(): Record<string, unknown> {

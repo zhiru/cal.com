@@ -1,10 +1,10 @@
 import { type PrismaClient, Prisma } from "@prisma/client";
-import { orderBy } from "lodash";
 
 import { hasFilter } from "@calcom/features/filters/lib/hasFilter";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";
 import { CAL_URL } from "@calcom/lib/constants";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
+import { logP } from "@calcom/lib/perf";
 import { getBookerUrl } from "@calcom/lib/server/getBookerUrl";
 import { baseEventTypeSelect } from "@calcom/prisma";
 import { MembershipRole, SchedulingType } from "@calcom/prisma/enums";
@@ -48,16 +48,16 @@ const eventTypeSelect = Prisma.validator<Prisma.EventTypeSelect>()({
     },
   },
   metadata: true,
-  users: {
-    select: userSelect,
-  },
-  children: {
-    include: {
-      users: {
-        select: userSelect,
-      },
-    },
-  },
+  // users: {
+  //   select: userSelect,
+  // },
+  // children: {
+  //   include: {
+  //     users: {
+  //       select: userSelect,
+  //     },
+  //   },
+  // },
   parentId: true,
   hosts: {
     select: {
@@ -84,6 +84,8 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
     rateLimitingType: "common",
   });
 
+  const userQueryTimer = logP(`userQueryTimer(${ctx.user.id})`);
+
   const user = await prisma.user.findUnique({
     where: {
       id: ctx.user.id,
@@ -97,87 +99,110 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
       bufferTime: true,
       avatar: true,
       organizationId: true,
-      teams: {
-        where: {
-          accepted: true,
-        },
-        select: {
-          role: true,
-          team: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              parentId: true,
-              metadata: true,
-              members: {
-                select: {
-                  userId: true,
-                },
-              },
-              eventTypes: {
-                select: eventTypeSelect,
-                orderBy: [
-                  {
-                    position: "desc",
-                  },
-                  {
-                    id: "asc",
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-      eventTypes: {
-        where: {
-          team: null,
-          userId: getPrismaWhereUserIdFromFilter(ctx.user.id, input?.filters),
-        },
-        select: eventTypeSelect,
-        orderBy: [
-          {
-            position: "desc",
-          },
-          {
-            id: "asc",
-          },
-        ],
-      },
+      // teams: {
+      //   where: {
+      //     accepted: true,
+      //   },
+      //   select: {
+      //     role: true,
+      //     team: {
+      //       select: {
+      //         id: true,
+      //         name: true,
+      //         slug: true,
+      //         parentId: true,
+      //         metadata: true,
+      //         members: {
+      //           select: {
+      //             userId: true,
+      //           },
+      //         },
+      //         eventTypes: {
+      //           select: eventTypeSelect,
+      //           orderBy: [
+      //             {
+      //               position: "desc",
+      //             },
+      //             {
+      //               id: "asc",
+      //             },
+      //           ],
+      //         },
+      //       },
+      //     },
+      //   },
+      // },
+      // eventTypes: {
+      //   where: {
+      //     team: null,
+      //     userId: getPrismaWhereUserIdFromFilter(ctx.user.id, input?.filters),
+      //   },
+      //   select: eventTypeSelect,
+      //   orderBy: [
+      //     {
+      //       position: "desc",
+      //     },
+      //     {
+      //       id: "asc",
+      //     },
+      //   ],
+      // },
     },
   });
+
+  userQueryTimer();
 
   if (!user) {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  const mapEventType = (eventType: (typeof user.eventTypes)[number]) => ({
+  const eventTypesQueryTimer = logP(`eventTypesQuery(${ctx.user.id})`);
+
+  const eventTypes = await prisma.eventType.findMany({
+    where: {
+      team: null,
+      userId: getPrismaWhereUserIdFromFilter(ctx.user.id, input?.filters),
+    },
+    select: eventTypeSelect,
+    orderBy: [
+      {
+        position: "desc",
+      },
+      {
+        id: "asc",
+      },
+    ],
+  });
+
+  eventTypesQueryTimer();
+
+  const mapEventType = (eventType: (typeof eventTypes)[number]) => ({
     ...eventType,
     safeDescription: markdownToSafeHTML(eventType.description),
     users: !!eventType.hosts?.length ? eventType.hosts.map((host) => host.user) : eventType.users,
     metadata: eventType.metadata ? EventTypeMetaDataSchema.parse(eventType.metadata) : undefined,
   });
 
-  const userEventTypes = user.eventTypes.map(mapEventType);
+  const userEventTypes = eventTypes.map(mapEventType);
   // backwards compatibility, TMP:
-  const typesRaw = (
-    await prisma.eventType.findMany({
-      where: {
-        userId: getPrismaWhereUserIdFromFilter(ctx.user.id, input?.filters),
-        team: null,
-      },
-      select: eventTypeSelect,
-      orderBy: [
-        {
-          position: "desc",
-        },
-        {
-          id: "asc",
-        },
-      ],
-    })
-  ).map(mapEventType);
+  const typesRaw = [];
+  // = (
+  //   await prisma.eventType.findMany({
+  //     where: {
+  //       userId: getPrismaWhereUserIdFromFilter(ctx.user.id, input?.filters),
+  //       team: null,
+  //     },
+  //     select: eventTypeSelect,
+  //     orderBy: [
+  //       {
+  //         position: "desc",
+  //       },
+  //       {
+  //         id: "asc",
+  //       },
+  //     ],
+  //   })
+  // ).map(mapEventType);
 
   type EventTypeGroup = {
     teamId?: number | null;
@@ -208,25 +233,27 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
 
   const image = user?.username ? `${CAL_URL}/${user.username}/avatar.png` : undefined;
 
-  eventTypeGroups.push({
-    teamId: null,
-    membershipRole: null,
-    profile: {
-      slug: user.username,
-      name: user.name,
-      image,
-    },
-    eventTypes: orderBy(mergedEventTypes, ["position", "id"], ["desc", "asc"]),
-    metadata: {
-      membershipCount: 1,
-      readOnly: false,
-    },
-  });
+  // eventTypeGroups.push({
+  //   teamId: null,
+  //   membershipRole: null,
+  //   profile: {
+  //     slug: user.username,
+  //     name: user.name,
+  //     image,
+  //   },
+  //   eventTypes: orderBy(mergedEventTypes, ["position", "id"], ["desc", "asc"]),
+  //   metadata: {
+  //     membershipCount: 1,
+  //     readOnly: false,
+  //   },
+  // });
 
-  const teamMemberships = user.teams.map((membership) => ({
-    teamId: membership.team.id,
-    membershipRole: membership.role,
-  }));
+  const teamMemberships = [];
+
+  // user.teams.map((membership) => ({
+  //   teamId: membership.team.id,
+  //   membershipRole: membership.role,
+  // }));
 
   const filterTeamsEventTypesBasedOnInput = (eventType: ReturnType<typeof mapEventType>) => {
     if (!input?.filters || !hasFilter(input?.filters)) {
@@ -237,7 +264,7 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
 
   eventTypeGroups = ([] as EventTypeGroup[]).concat(
     eventTypeGroups,
-    user.teams
+    []
       .filter((mmship) => {
         const metadata = teamMetadataSchema.parse(mmship.team.metadata);
         return !metadata?.isOrganization;

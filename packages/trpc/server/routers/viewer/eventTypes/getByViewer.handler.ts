@@ -1,4 +1,5 @@
 import { type PrismaClient, Prisma } from "@prisma/client";
+import { orderBy } from "lodash";
 
 import { hasFilter } from "@calcom/features/filters/lib/hasFilter";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";

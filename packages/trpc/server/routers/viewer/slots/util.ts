@@ -95,20 +95,6 @@ export async function getEventType(input: TGetScheduleInputSchema) {
       periodCountCalendarDays: true,
       periodDays: true,
       metadata: true,
-      schedule: {
-        select: {
-          availability: true,
-          timeZone: true,
-        },
-      },
-      availability: {
-        select: {
-          date: true,
-          startTime: true,
-          endTime: true,
-          days: true,
-        },
-      },
       hosts: {
         select: {
           isFixed: true,

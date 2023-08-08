@@ -162,7 +162,15 @@ function buildSlotsWithDateRanges({
   offsetStart = offsetStart ? minimumOfOne(offsetStart) : 0;
   const slots: { time: Dayjs; userIds?: number[] }[] = [];
 
+  console.log("Number of date ranges = " + dateRanges.length);
+  const organizerTimezoneOffset = dayjs().tz(organizerTimeZone).utcOffset();
+
   dateRanges.forEach((range) => {
+    const buildSlotsWithDateRangesSpan = tracer.startSpan(
+      "buildSlotsWithDateRanges",
+      undefined,
+      context.active()
+    );
     const startTimeWithMinNotice = dayjs.utc().add(minimumBookingNotice, "minute");
 
     let slotStartTime = range.start.utc().isAfter(startTimeWithMinNotice)
@@ -187,8 +195,8 @@ function buildSlotsWithDateRanges({
 
     // Adding 1 minute to date ranges that end at midnight to ensure that the last slot is included
     const rangeEnd = range.end
-      .add(dayjs().tz(organizerTimeZone).utcOffset(), "minutes")
-      .isSame(range.end.endOf("day").add(dayjs().tz(organizerTimeZone).utcOffset(), "minutes"), "minute")
+      .add(organizerTimezoneOffset, "minutes")
+      .isSame(range.end.endOf("day").add(organizerTimezoneOffset, "minutes"), "minute")
       ? range.end.add(1, "minute")
       : range.end;
 

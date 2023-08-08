@@ -281,11 +281,15 @@ export async function getAvailableSlots(input: TGetScheduleInputSchema) {
   const checkForAvailabilityCount = 0;
 
   const getSlotsSpan = tracer.startSpan("getSlots", undefined, context.active());
+  const getAggregatedAvailabilitySpan = tracer.startSpan("getSlots", undefined, context.active());
+  const aggregatedAvailability = getAggregatedAvailability(userAvailability, eventType.schedulingType);
+  getAggregatedAvailabilitySpan.end();
+
   const timeSlots = getSlots({
     inviteeDate: startTime,
     eventLength: input.duration || eventType.length,
     offsetStart: eventType.offsetStart,
-    dateRanges: getAggregatedAvailability(userAvailability, eventType.schedulingType),
+    dateRanges: aggregatedAvailability,
     minimumBookingNotice: eventType.minimumBookingNotice,
     frequency: eventType.slotInterval || input.duration || eventType.length,
     organizerTimeZone: eventType.timeZone || eventType?.schedule?.timeZone || userAvailability?.[0]?.timeZone,

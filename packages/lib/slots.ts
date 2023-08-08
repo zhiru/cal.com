@@ -167,13 +167,7 @@ function buildSlotsWithDateRanges({
   const organizerTimezoneOffset = dayjs().tz(organizerTimeZone).utcOffset();
 
   dateRanges.forEach((range) => {
-    const buildSlotsWithDateRangesSpan = tracer.startSpan(
-      "buildSlotsWithDateRanges",
-      undefined,
-      context.active()
-    );
     const startTimeWithMinNotice = dayjs.utc().add(minimumBookingNotice, "minute");
-
     let slotStartTime = range.start.utc().isAfter(startTimeWithMinNotice)
       ? range.start
       : startTimeWithMinNotice;
@@ -195,20 +189,28 @@ function buildSlotsWithDateRanges({
         : slotStartTime;
 
     // Adding 1 minute to date ranges that end at midnight to ensure that the last slot is included
+    const rangeEndSpan = tracer.startSpan("rangeEnd", undefined, context.active());
     const rangeEnd = range.end
       .add(organizerTimezoneOffset, "minutes")
       .isSame(range.end.endOf("day").add(organizerTimezoneOffset, "minutes"), "minute")
       ? range.end.add(1, "minute")
       : range.end;
 
-    slotStartTime = slotStartTime.add(offsetStart ?? 0, "minutes").tz(timeZone);
+    rangeEndSpan.end();
 
+    const slotStartTimeTzSpan = tracer.startSpan("slotStartTimeTz", undefined, context.active());
+    slotStartTime = slotStartTime.add(offsetStart ?? 0, "minutes").tz(timeZone);
+    slotStartTimeTzSpan.end();
+
+    const whileLoopSpan = tracer.startSpan("whileLoop", undefined, context.active());
     while (!slotStartTime.add(eventLength, "minutes").subtract(1, "second").utc().isAfter(rangeEnd)) {
       slots.push({
         time: slotStartTime,
       });
       slotStartTime = slotStartTime.add(frequency + (offsetStart ?? 0), "minutes");
     }
+
+    whileLoopSpan.end();
   });
 
   return slots;

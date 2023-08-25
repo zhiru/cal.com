@@ -137,6 +137,9 @@ const nextConfig = {
     ...i18n,
     localeDetection: false,
   },
+  experimental: {
+    esmExternals: false,
+  },
   productionBrowserSourceMaps: true,
   /* We already do type check on GH actions */
   typescript: {

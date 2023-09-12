@@ -1,0 +1,11 @@
+{
+  "name": "@calcom/kysely",
+  "packageManager": "yarn@3.4.1",
+  "dependencies": {
+    "kysely": "^0.26.3",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.10.2"
+  }
+}

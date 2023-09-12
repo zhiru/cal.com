@@ -24,8 +24,10 @@ class Database {
 
   public static getInstance(): Kysely<DB> {
     if (!Database.instance) {
+      console.log("Creating new database instance");
       new Database(dialect);
     }
+    console.log("Reusing old db instance");
     return Database.instance;
   }
 }

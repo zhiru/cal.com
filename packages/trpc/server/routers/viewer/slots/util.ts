@@ -8,6 +8,7 @@ import { getUserAvailability } from "@calcom/core/getUserAvailability";
 import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import { getSlugOrRequestedSlug, orgDomainConfig } from "@calcom/ee/organizations/lib/orgDomains";
+import { db } from "@calcom/kysely";
 import { getDefaultEvent } from "@calcom/lib/defaultEvents";
 import isTimeOutOfBounds from "@calcom/lib/isOutOfBounds";
 import logger from "@calcom/lib/logger";
@@ -85,8 +86,8 @@ async function getEventTypeId({
 }) {
   if (!eventTypeSlug || !slug) return null;
 
-  let teamId;
-  let userId;
+  let teamId: number | undefined;
+  let userId: number | undefined;
   if (isTeamEvent) {
     teamId = await getTeamIdFromSlug(
       slug,
@@ -98,16 +99,15 @@ async function getEventTypeId({
       organizationDetails ?? { currentOrgDomain: null, isValidOrgDomain: false }
     );
   }
-  const eventType = await prisma.eventType.findFirst({
-    where: {
-      slug: eventTypeSlug,
-      ...(teamId ? { teamId } : {}),
-      ...(userId ? { userId } : {}),
-    },
-    select: {
-      id: true,
-    },
-  });
+  console.time("getEventType");
+  const eventType = await db
+    .selectFrom("EventType")
+    .select("id")
+    .$if(!!teamId, (qb) => qb.where("EventType.teamId", "=", teamId as number))
+    .$if(!!userId, (qb) => qb.where("EventType.userId", "=", userId as number))
+    .executeTakeFirst();
+  console.timeEnd("getEventType");
+
   if (!eventType) {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
@@ -533,14 +533,31 @@ async function getTeamIdFromSlug(
   organizationDetails: { currentOrgDomain: string | null; isValidOrgDomain: boolean }
 ) {
   const { currentOrgDomain, isValidOrgDomain } = organizationDetails;
-  const team = await prisma.team.findFirst({
-    where: {
-      slug,
-      parent: isValidOrgDomain && currentOrgDomain ? getSlugOrRequestedSlug(currentOrgDomain) : null,
-    },
-    select: {
-      id: true,
-    },
-  });
+
+  // TODO: handle orgs
+  const parentId = isValidOrgDomain && currentOrgDomain ? getSlugOrRequestedSlug(currentOrgDomain) : null;
+  const team = await db
+    .selectFrom("Team")
+    .select("id")
+    .where(({ and, eb }) =>
+      and([
+        eb("slug", "=", slug),
+        // eb(
+        //   "parentId",
+        //   "=",
+        //   isValidOrgDomain && currentOrgDomain ? getSlugOrRequestedSlug(currentOrgDomain) : null
+        // ),
+      ])
+    )
+    .executeTakeFirst();
+  // const team = await prisma.team.findFirst({
+  //   where: {
+  //     slug,
+  //     parent: isValidOrgDomain && currentOrgDomain ? getSlugOrRequestedSlug(currentOrgDomain) : null,
+  //   },
+  //   select: {
+  //     id: true,
+  //   },
+  // });
   return team?.id;
 }

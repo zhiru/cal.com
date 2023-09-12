@@ -2,6 +2,7 @@ import type { TFunction } from "next-i18next";
 import { z } from "zod";
 
 import { appStoreMetadata } from "@calcom/app-store/bookerAppsMetaData";
+import { getLocationsWithId } from "@calcom/features/bookings/lib/getLocationsWithId";
 import logger from "@calcom/lib/logger";
 import { BookingStatus } from "@calcom/prisma/enums";
 import type { Ensure, Optional } from "@calcom/types/utils";
@@ -221,14 +222,22 @@ for (const [appName, meta] of Object.entries(appStoreMetadata)) {
 }
 
 const locationsTypes = [...defaultLocations, ...locationsFromApps];
-export const getStaticLinkBasedLocation = (locationType: string) =>
-  locationsFromApps.find((l) => l.linkType === "static" && l.type === locationType);
+const getLocationTypeFromLocationTypeAndId = (locationTypePlusId: string | null | undefined) => {
+  if (!locationTypePlusId) {
+    return locationTypePlusId;
+  }
+  return locationTypePlusId.replace(/\(id:[^)]+\)/, "");
+};
+export const getStaticLinkBasedLocation = (locationTypePlusId: string) =>
+  locationsFromApps.find(
+    (l) => l.linkType === "static" && l.type === getLocationTypeFromLocationTypeAndId(locationTypePlusId)
+  );
 
-export const getEventLocationTypeFromApp = (locationType: string) =>
-  locationsFromApps.find((l) => l.type === locationType);
+export const getEventLocationTypeFromApp = (locationTypePlusId: string) =>
+  locationsFromApps.find((l) => l.type === getLocationTypeFromLocationTypeAndId(locationTypePlusId));
 
-export const getEventLocationType = (locationType: string | undefined | null) =>
-  locationsTypes.find((l) => l.type === locationType);
+export const getEventLocationType = (locationTypePlusId: string | undefined | null) =>
+  locationsTypes.find((l) => l.type === getLocationTypeFromLocationTypeAndId(locationTypePlusId));
 
 export const getEventLocationTypeFromValue = (value: string | undefined | null) => {
   if (!value) {
@@ -345,9 +354,19 @@ export const getLocationValueForDB = (
 ) => {
   let bookingLocation = bookingLocationTypeOrValue;
   let conferenceCredentialId = undefined;
-  eventLocations.forEach((location) => {
-    if (location.type === bookingLocationTypeOrValue) {
+  getLocationsWithId(eventLocations).forEach((location) => {
+    if (!location) {
+      return null;
+    }
+    console.log({
+      bookingLocationTypeOrValue,
+      location,
+    });
+    if (location.id === bookingLocationTypeOrValue) {
       const eventLocationType = getEventLocationType(bookingLocationTypeOrValue);
+      console.log({
+        eventLocationType,
+      });
       conferenceCredentialId = location.credentialId;
       if (!eventLocationType) {
         return;
@@ -360,6 +379,10 @@ export const getLocationValueForDB = (
 
       bookingLocation = location[eventLocationType.defaultValueVariable] || bookingLocation;
     }
+  });
+  console.log({
+    bookingLocation,
+    conferenceCredentialId,
   });
   return { bookingLocation, conferenceCredentialId };
 };

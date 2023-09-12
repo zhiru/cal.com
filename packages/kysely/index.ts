@@ -13,6 +13,21 @@ const dialect = new PostgresDialect({
   }),
 });
 
-export const db = new Kysely<DB>({
-  dialect,
-});
+class Database {
+  private static instance: Kysely<DB>;
+
+  private constructor(dialect: PostgresDialect) {
+    Database.instance = new Kysely<DB>({
+      dialect,
+    });
+  }
+
+  public static getInstance(): Kysely<DB> {
+    if (!Database.instance) {
+      new Database(dialect);
+    }
+    return Database.instance;
+  }
+}
+
+export const db = Database.getInstance();

@@ -99,14 +99,14 @@ async function getEventTypeId({
       organizationDetails ?? { currentOrgDomain: null, isValidOrgDomain: false }
     );
   }
-  console.time("getEventType");
+  console.time("getEventTypeId");
   const eventType = await db
     .selectFrom("EventType")
     .select("id")
     .$if(!!teamId, (qb) => qb.where("EventType.teamId", "=", teamId as number))
     .$if(!!userId, (qb) => qb.where("EventType.userId", "=", userId as number))
     .executeTakeFirst();
-  console.timeEnd("getEventType");
+  console.timeEnd("getEventTypeId");
 
   if (!eventType) {
     throw new TRPCError({ code: "NOT_FOUND" });
@@ -132,6 +132,33 @@ export async function getEventType(
   if (!eventTypeId) {
     return null;
   }
+
+  console.time("getEventType");
+  const eventTypeTwo = await db
+    .selectFrom("EventType")
+    .where("EventType.id", "=", eventTypeId)
+    .select([
+      "id",
+      "slug",
+      "minimumBookingNotice",
+      "length",
+      "offsetStart",
+      "seatsPerTimeSlot",
+      "timeZone",
+      "slotInterval",
+      "beforeEventBuffer",
+      "afterEventBuffer",
+      "bookingLimits",
+      "durationLimits",
+      "schedulingType",
+      "periodType",
+      "periodStartDate",
+      "periodEndDate",
+      "periodCountCalendarDays",
+      "periodDays",
+      "metadata",
+    ])
+    .executeTakeFirst();
 
   const eventType = await prisma.eventType.findUnique({
     where: {
@@ -193,6 +220,7 @@ export async function getEventType(
   if (!eventType) {
     return null;
   }
+  console.timeEnd("getEventType");
 
   return {
     ...eventType,

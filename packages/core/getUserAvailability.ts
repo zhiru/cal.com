@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Booking, Prisma, EventType as PrismaEventType } from "@prisma/client";
 import { z } from "zod";
 
 import type { Dayjs } from "@calcom/dayjs";
@@ -8,9 +8,8 @@ import { getWorkingHours } from "@calcom/lib/availability";
 import { buildDateRanges, subtract } from "@calcom/lib/date-ranges";
 import { HttpError } from "@calcom/lib/http-error";
 import { descendingLimitKeys, intervalLimitKeyToUnit } from "@calcom/lib/intervalLimit";
-import logger from "@calcom/lib/logger";
 import { checkBookingLimit } from "@calcom/lib/server";
-import { performance } from "@calcom/lib/server/perfObserver";
+import { tracer, context } from "@calcom/lib/server/otel-initializer";
 import { getTotalBookingDuration } from "@calcom/lib/server/queries";
 import prisma, { availabilityUserSelect } from "@calcom/prisma";
 import { BookingStatus } from "@calcom/prisma/enums";
@@ -128,6 +127,15 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
     eventType?: EventType;
     currentSeats?: CurrentSeats;
     rescheduleUid?: string | null;
+    currentBookings?: (Pick<Booking, "id" | "uid" | "userId" | "startTime" | "endTime" | "title"> & {
+      eventType: Pick<
+        PrismaEventType,
+        "id" | "beforeEventBuffer" | "afterEventBuffer" | "seatsPerTimeSlot"
+      > | null;
+      _count?: {
+        seatsReferences: number;
+      };
+    })[];
   }
 ) {
   const { username, userId, dateFrom, dateTo, eventTypeId, afterEventBuffer, beforeEventBuffer, duration } =
@@ -151,12 +159,17 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
     current bookings with a seats event type and display them on the calendar, even if they are full */
   let currentSeats: CurrentSeats | null = initialData?.currentSeats || null;
   if (!currentSeats && eventType?.seatsPerTimeSlot) {
+    const getCurrentSeatsSpan = tracer.startSpan(
+      "getCurrentSeats-" + eventType.id,
+      undefined,
+      context.active()
+    );
     currentSeats = await getCurrentSeats(eventType.id, dateFrom, dateTo);
+    getCurrentSeatsSpan.end();
   }
 
   const bookingLimits = parseBookingLimit(eventType?.bookingLimits);
   const durationLimits = parseDurationLimit(eventType?.durationLimits);
-
   const busyTimesFromLimits =
     eventType && (bookingLimits || durationLimits)
       ? await getBusyTimesFromLimits(
@@ -173,13 +186,14 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
   // TODO: only query what we need after applying limits (shrink date range)
   const getBusyTimesStart = dateFrom.toISOString();
   const getBusyTimesEnd = dateTo.toISOString();
-
+  const getBusyTimesSpan = tracer.startSpan("getBusyTimes-" + user.id, undefined, context.active());
   const busyTimes = await getBusyTimes({
     credentials: user.credentials,
     startTime: getBusyTimesStart,
     endTime: getBusyTimesEnd,
     eventTypeId,
     userId: user.id,
+    userEmail: user.email,
     username: `${user.username}`,
     beforeEventBuffer,
     afterEventBuffer,
@@ -187,7 +201,10 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
     seatedEvent: !!eventType?.seatsPerTimeSlot,
     rescheduleUid: initialData?.rescheduleUid || null,
     duration,
+    currentBookings: initialData?.currentBookings,
   });
+
+  getBusyTimesSpan.end();
 
   const detailedBusyTimes: EventBusyDetails[] = [
     ...busyTimes.map((a) => ({
@@ -209,9 +226,8 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
       ? eventType.schedule
       : userSchedule;
 
-  const startGetWorkingHours = performance.now();
-
   const timeZone = schedule?.timeZone || eventType?.timeZone || user.timeZone;
+  const getWorkingHoursSpan = tracer.startSpan("getWorkingHours-" + user.id, undefined, context.active());
 
   const availability = (
     schedule.availability || (eventType?.availability.length ? eventType.availability : user.availability)
@@ -221,10 +237,9 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
   }));
 
   const workingHours = getWorkingHours({ timeZone }, availability);
+  getWorkingHoursSpan.end();
 
-  const endGetWorkingHours = performance.now();
-  logger.debug(`getWorkingHours took ${endGetWorkingHours - startGetWorkingHours}ms for userId ${userId}`);
-
+  const dateOverridesSpan = tracer.startSpan("dateOverrides-" + user.id, undefined, context.active());
   const dateOverrides = availability
     .filter((availability) => !!availability.date)
     .map((override) => {
@@ -236,12 +251,18 @@ export const getUserAvailability = async function getUsersWorkingHoursLifeTheUni
       };
     });
 
+  dateOverridesSpan.end();
+
+  const buildDateRangesSpan = tracer.startSpan("buildDateRanges-" + user.id, undefined, context.active());
+
   const dateRanges = buildDateRanges({
     dateFrom,
     dateTo,
     availability,
     timeZone,
   });
+
+  buildDateRangesSpan.end();
 
   const formattedBusyTimes = detailedBusyTimes.map((busy) => ({
     start: dayjs(busy.start),

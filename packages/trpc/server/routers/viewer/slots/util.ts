@@ -11,10 +11,11 @@ import { getSlugOrRequestedSlug, orgDomainConfig } from "@calcom/ee/organization
 import { getDefaultEvent } from "@calcom/lib/defaultEvents";
 import isTimeOutOfBounds from "@calcom/lib/isOutOfBounds";
 import logger from "@calcom/lib/logger";
-import { performance } from "@calcom/lib/server/perfObserver";
+import { tracer, context } from "@calcom/lib/server/otel-initializer";
 import getSlots from "@calcom/lib/slots";
 import prisma, { availabilityUserSelect } from "@calcom/prisma";
 import { SchedulingType } from "@calcom/prisma/enums";
+import { BookingStatus } from "@calcom/prisma/enums";
 import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 import type { EventBusyDate } from "@calcom/types/Calendar";
 
@@ -332,14 +333,10 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
   if (process.env.INTEGRATION_TEST_MODE === "true") {
     logger.setSettings({ minLevel: "silly" });
   }
-  const startPrismaEventTypeGet = performance.now();
-  const eventType = await getRegularOrDynamicEventType(input, orgDetails);
-  const endPrismaEventTypeGet = performance.now();
-  logger.debug(
-    `Prisma eventType get took ${endPrismaEventTypeGet - startPrismaEventTypeGet}ms for event:${
-      input.eventTypeId
-    }`
-  );
+  const span = tracer.startSpan("getRegularOrDynamicEventType", undefined, context.active());
+  const eventType = await getRegularOrDynamicEventType(input);
+  span.end();
+
   if (!eventType) {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
@@ -369,9 +366,85 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
     usersWithCredentials = eventType.hosts.map(({ isFixed, user }) => ({ isFixed, ...user }));
   }
 
+  const durationToUse = input.duration || 0;
+
+  const startTimeDate =
+    input.rescheduleUid && durationToUse
+      ? startTime.subtract(durationToUse, "minute").toDate()
+      : startTime.toDate();
+
+  const endTimeDate =
+    input.rescheduleUid && durationToUse ? endTime.add(durationToUse, "minute").toDate() : endTime.toDate();
+
+  const sharedQuery = {
+    startTime: { gte: startTimeDate },
+    endTime: { lte: endTimeDate },
+    status: {
+      in: [BookingStatus.ACCEPTED],
+    },
+  };
+
+  const getBookingsSpan = tracer.startSpan("getBookingsAllUsers", undefined, context.active());
+
+  const currentBookingsAllUsers = await prisma.booking.findMany({
+    where: {
+      OR: [
+        // User is primary host (individual events, or primary organizer)
+        {
+          ...sharedQuery,
+          userId: {
+            in: usersWithCredentials.map((user) => user.id),
+          },
+        },
+        // The current user has a different booking at this time he/she attends
+        {
+          ...sharedQuery,
+          attendees: {
+            some: {
+              email: {
+                in: usersWithCredentials.map((user) => user.email),
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      uid: true,
+      userId: true,
+      startTime: true,
+      endTime: true,
+      title: true,
+      attendees: true,
+      eventType: {
+        select: {
+          id: true,
+          afterEventBuffer: true,
+          beforeEventBuffer: true,
+          seatsPerTimeSlot: true,
+        },
+      },
+      ...(!!eventType?.seatsPerTimeSlot && {
+        _count: {
+          select: {
+            seatsReferences: true,
+          },
+        },
+      }),
+    },
+  });
+
+  getBookingsSpan.end();
+
   /* We get all users working hours and busy slots */
   const userAvailability = await Promise.all(
     usersWithCredentials.map(async (currentUser) => {
+      const userAvailabilitySpan = tracer.startSpan(
+        "userAvailability-" + currentUser.id,
+        undefined,
+        context.active()
+      );
       const {
         busy,
         dateRanges,
@@ -388,9 +461,24 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
           beforeEventBuffer: eventType.beforeEventBuffer,
           duration: input.duration || 0,
         },
-        { user: currentUser, eventType, currentSeats, rescheduleUid: input.rescheduleUid }
+        {
+          user: currentUser,
+          eventType,
+          currentSeats,
+          rescheduleUid: input.rescheduleUid,
+          currentBookings: currentBookingsAllUsers
+            .filter(
+              (b) => b.userId === currentUser.id || b.attendees?.some((a) => a.email === currentUser.email)
+            )
+            .map((bookings) => {
+              const { attendees: _attendees, ...bookingWithoutAttendees } = bookings;
+              return bookingWithoutAttendees;
+            }),
+        }
       );
       if (!currentSeats && _currentSeats) currentSeats = _currentSeats;
+
+      userAvailabilitySpan.end();
       return {
         timeZone,
         dateRanges,
@@ -419,6 +507,7 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
   const getSlotsCount = 0;
   const checkForAvailabilityCount = 0;
 
+  const getSlotsSpan = tracer.startSpan("getSlots", undefined, context.active());
   const timeSlots = getSlots({
     inviteeDate: startTime,
     eventLength: input.duration || eventType.length,
@@ -428,9 +517,11 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
     frequency: eventType.slotInterval || input.duration || eventType.length,
     organizerTimeZone: eventType.timeZone || eventType?.schedule?.timeZone || userAvailability?.[0]?.timeZone,
   });
+  getSlotsSpan.end();
 
   let availableTimeSlots: typeof timeSlots = [];
   // Load cached busy slots
+  const selectedSlotsSpan = tracer.startSpan("selectedSlots", undefined, context.active());
   const selectedSlots =
     /* FIXME: For some reason this returns undefined while testing in Jest */
     (await prisma.selectedSlots.findMany({
@@ -451,9 +542,16 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
     where: { eventTypeId: { equals: eventType.id }, id: { notIn: selectedSlots.map((item) => item.id) } },
   });
 
+  selectedSlotsSpan.end();
+
   availableTimeSlots = timeSlots;
 
   if (selectedSlots?.length > 0) {
+    const selectedSlotsProcessingSpan = tracer.startSpan(
+      "selectedSlotsProcessing",
+      undefined,
+      context.active()
+    );
     let occupiedSeats: typeof selectedSlots = selectedSlots.filter(
       (item) => item.isSeat && item.eventTypeId === eventType.id
     );
@@ -527,9 +625,12 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
           return !!item;
         }
       );
+    selectedSlotsProcessingSpan.end();
   }
 
+  const isTimeWithinBoundsSpan = tracer.startSpan("isTimeWithinBounds", undefined, context.active());
   availableTimeSlots = availableTimeSlots.filter((slot) => isTimeWithinBounds(slot.time));
+  isTimeWithinBoundsSpan.end();
   // fr-CA uses YYYY-MM-DD
   const formatter = new Intl.DateTimeFormat("fr-CA", {
     year: "numeric",
@@ -538,6 +639,7 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
     timeZone: input.timeZone,
   });
 
+  const computedAvailableSlotsSpan = tracer.startSpan("computedAvailableSlots", undefined, context.active());
   const computedAvailableSlots = availableTimeSlots.reduce(
     (
       r: Record<string, { time: string; users: string[]; attendees?: number; bookingUid?: string }[]>,
@@ -577,6 +679,7 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
     Object.create(null)
   );
 
+  computedAvailableSlotsSpan.end();
   logger.debug(`getSlots took ${getSlotsTime}ms and executed ${getSlotsCount} times`);
 
   logger.debug(

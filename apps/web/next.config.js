@@ -147,6 +147,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: !!process.env.CI,
   },
+  experimental: {
+    instrumentationHook: true,
+  },
   transpilePackages: [
     "@calcom/app-store",
     "@calcom/core",
@@ -253,6 +256,10 @@ const nextConfig = {
       {
         source: "/org/:slug",
         destination: "/team/:slug",
+      },
+      {
+        source: "/org/:orgSlug/avatar.png",
+        destination: "/api/user/avatar?orgSlug=:orgSlug",
       },
       {
         source: "/team/:teamname/avatar.png",

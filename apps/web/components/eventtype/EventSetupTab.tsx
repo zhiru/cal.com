@@ -301,7 +301,7 @@ export const EventSetupTab = (
                     <div className="flex items-center">
                       <img
                         src={eventLocationType.iconUrl}
-                        className="h-4 w-4 dark:invert-[.65]"
+                        className="h-4 w-4"
                         alt={`${eventLocationType.label} logo`}
                       />
                       <span className="ms-1 line-clamp-1 text-sm">{`${eventLabel} ${

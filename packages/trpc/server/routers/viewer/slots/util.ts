@@ -566,13 +566,6 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
       r[dateString].push({
         ...passThroughProps,
         time: time.toISOString(),
-        users: (eventType.hosts
-          ? eventType.hosts.map((hostUserWithCredentials) => {
-              const { user } = hostUserWithCredentials;
-              return user;
-            })
-          : eventType.users
-        ).map((user) => user.username || ""),
         // Conditionally add the attendees and booking id to slots object if there is already a booking during that time
         ...(currentSeats?.some((booking) => booking.startTime.toISOString() === time.toISOString()) && {
           attendees:

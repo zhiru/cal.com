@@ -309,7 +309,7 @@ function EventTypeSingleLayout({
                   variant="icon"
                   StartIcon={LinkIcon}
                   tooltip={t("copy_link")}
-                  side="bottom"
+                  tooltipPosition="bottom"
                   onClick={() => {
                     navigator.clipboard.writeText(permalink);
                     showToast("Link copied!", "success");
@@ -332,7 +332,7 @@ function EventTypeSingleLayout({
                 variant="icon"
                 StartIcon={Trash}
                 tooltip={t("delete")}
-                side="bottom"
+                tooltipPosition="bottom"
                 disabled={!hasPermsToDelete}
                 onClick={() => setDeleteDialogOpen(true)}
               />

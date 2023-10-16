@@ -76,16 +76,16 @@ test.describe("unauthorized user sees correct translations (zh)", async () => {
   });
 });
 
-test.describe("unauthorized user sees correct translations (zh-cn)", async () => {
+test.describe("unauthorized user sees correct translations (zh-CN)", async () => {
   test.use({
-    locale: "zh-cn",
+    locale: "zh-CN",
   });
 
   test("should use correct translations and html attributes", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("load");
 
-    await page.locator("html[lang=zh-cn]").waitFor({ state: "attached" });
+    await page.locator("html[lang=zh-CN]").waitFor({ state: "attached" });
     await page.locator("html[dir=ltr]").waitFor({ state: "attached" });
 
     {
@@ -100,16 +100,16 @@ test.describe("unauthorized user sees correct translations (zh-cn)", async () =>
   });
 });
 
-test.describe("unauthorized user sees correct translations (zh-tw)", async () => {
+test.describe("unauthorized user sees correct translations (zh-TW)", async () => {
   test.use({
-    locale: "zh-tw",
+    locale: "zh-TW",
   });
 
   test("should use correct translations and html attributes", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("load");
 
-    await page.locator("html[lang=zh-tw]").waitFor({ state: "attached" });
+    await page.locator("html[lang=zh-TW]").waitFor({ state: "attached" });
     await page.locator("html[dir=ltr]").waitFor({ state: "attached" });
 
     {
@@ -463,6 +463,68 @@ test.describe("authorized user sees changed translations (de->ar)", async () => 
 
       {
         const locator = page.getByText("عام", { exact: true }); // "general"
+        expect(await locator.count()).toBeGreaterThanOrEqual(1);
+      }
+
+      {
+        const locator = page.getByText("Allgemein", { exact: true }); // "general"
+        expect(await locator.count()).toEqual(0);
+      }
+    });
+  });
+});
+
+test.describe("authorized user sees changed translations (de->pt-BR) [locale1]", async () => {
+  test.use({
+    locale: "en",
+  });
+
+  test("should return correct translations and html attributes", async ({ page, users }) => {
+    await test.step("should create a de user", async () => {
+      const user = await users.create({
+        locale: "de",
+      });
+      await user.apiLogin();
+    });
+
+    await test.step("should change the language and show Brazil-Portuguese translations", async () => {
+      await page.goto("/settings/my-account/general");
+
+      await page.waitForLoadState("networkidle");
+
+      await page.locator(".bg-default > div > div:nth-child(2)").first().click();
+      await page.locator("#react-select-2-option-14").click();
+
+      await page.getByRole("button", { name: "Aktualisieren" }).click();
+
+      await page
+        .getByRole("button", { name: "Einstellungen erfolgreich aktualisiert" })
+        .waitFor({ state: "visible" });
+
+      await page.locator("html[lang=pt-BR]").waitFor({ state: "attached" });
+      await page.locator("html[dir=ltr]").waitFor({ state: "attached" });
+
+      {
+        const locator = page.getByText("Geral", { exact: true }); // "general"
+        expect(await locator.count()).toBeGreaterThanOrEqual(1);
+      }
+
+      {
+        const locator = page.getByText("Allgemein", { exact: true }); // "general"
+        expect(await locator.count()).toEqual(0);
+      }
+    });
+
+    await test.step("should reload and show Brazil-Portuguese translations", async () => {
+      await page.reload();
+
+      await page.waitForLoadState("networkidle");
+
+      await page.locator("html[lang=pt-BR]").waitFor({ state: "attached" });
+      await page.locator("html[dir=ltr]").waitFor({ state: "attached" });
+
+      {
+        const locator = page.getByText("Geral", { exact: true }); // "general"
         expect(await locator.count()).toBeGreaterThanOrEqual(1);
       }
 

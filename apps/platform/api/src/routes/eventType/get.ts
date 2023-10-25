@@ -13,7 +13,6 @@ const get: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
     try {
       const { id } = request.params;
       const eventTypes = getEventTypeById(id);
-      console.log(eventTypes);
 
       return eventTypes;
     } catch (err) {

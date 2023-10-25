@@ -3,7 +3,7 @@ import { getScheduleById } from '../../schedule/repository/getScheduleById';
 import type { FastifyPluginAsync } from 'fastify';
 
 const get: FastifyPluginAsync = async (fastify, opts) => {
-  fastify.get('/', async (requets, reply) => {
+  fastify.get('/', async (request, reply) => {
     try {
       const schedule = getAllSchedules();
 

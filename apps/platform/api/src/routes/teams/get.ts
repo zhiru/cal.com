@@ -7,7 +7,6 @@ const get: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
     try {
       const { id } = request.params;
       const team = await getTeamById(id);
-      fastify.log.info('This is team info', team?.name);
 
       return team;
     } catch (err) {

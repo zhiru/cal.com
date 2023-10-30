@@ -1,5 +1,4 @@
 // eslint-disable-next-line no-restricted-imports
-import { countBy } from "lodash";
 import { v4 as uuid } from "uuid";
 
 import { getAggregatedAvailability } from "@calcom/core/getAggregatedAvailability";
@@ -607,6 +606,13 @@ export async function getAvailableSlots({ input, ctx }: GetScheduleOptions) {
   return {
     slots: computedAvailableSlots,
   };
+}
+
+function countBy(array, selector) {
+  return array.map(selector).reduce((acc, cur) => {
+    acc[cur] = (acc[cur] || 0) + 1;
+    return acc;
+  }, {});
 }
 
 async function getUserIdFromUsername(

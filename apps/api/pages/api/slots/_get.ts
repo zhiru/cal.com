@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { getHTTPStatusCodeFromError } from "@trpc/server/http";
 
 export const config = {
-  runtime: "experimental-edge",
+  runtime: "edge",
 };
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {

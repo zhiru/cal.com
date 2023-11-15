@@ -1,7 +1,7 @@
 {
   "functions": {
     "pages/api/slots/*.ts": {
-      "memory": 2048
+      "memory": 3008
     }
   }
 }

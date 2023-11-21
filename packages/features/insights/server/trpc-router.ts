@@ -5,7 +5,7 @@ import { z } from "zod";
 import dayjs from "@calcom/dayjs";
 import { rawDataInputSchema } from "@calcom/features/insights/server/raw-data.schema";
 import { randomString } from "@calcom/lib/random";
-import authedProcedure from "@calcom/trpc/server/procedures/authedProcedure";
+import publicProcedure from "@calcom/trpc/server/procedures/publicProcedure";
 import { router } from "@calcom/trpc/server/trpc";
 
 import { TRPCError } from "@trpc/server";
@@ -17,7 +17,7 @@ const UserBelongsToTeamInput = z.object({
   isAll: z.boolean().optional(),
 });
 
-const userBelongsToTeamProcedure = authedProcedure.use(async ({ ctx, next, rawInput }) => {
+const userBelongsToTeamProcedure = publicProcedure.use(async ({ ctx, next, rawInput }) => {
   const parse = UserBelongsToTeamInput.safeParse(rawInput);
   if (!parse.success) {
     throw new TRPCError({ code: "BAD_REQUEST" });
@@ -34,6 +34,8 @@ const userBelongsToTeamProcedure = authedProcedure.use(async ({ ctx, next, rawIn
   if (parse.data.teamId) {
     membershipWhereConditional["teamId"] = parse.data.teamId;
   }
+
+  console.log(ctx.insightsDb);
 
   const membership = await ctx.insightsDb.membership.findFirst({
     where: membershipWhereConditional,

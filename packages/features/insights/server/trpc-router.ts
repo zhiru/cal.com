@@ -1136,7 +1136,7 @@ export const insightsRouter = router({
 
       return result;
     }),
-  teamListForUser: authedProcedure.query(async ({ ctx }) => {
+  teamListForUser: publicProcedure.query(async ({ ctx }) => {
     const user = ctx.user;
 
     // Fetch user data

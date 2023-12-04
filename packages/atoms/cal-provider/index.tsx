@@ -1,15 +1,20 @@
 import type { ReactNode } from "react";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 type CalProviderProps = {
   apiKey: string;
   children: ReactNode;
 };
 
-const ApiKeyContext = createContext("");
+const ApiKeyContext = createContext({ key: "", error: "" });
 
 export const useApiKey = () => useContext(ApiKeyContext);
 
 export function CalProvider({ apiKey, children }: CalProviderProps) {
-  return <ApiKeyContext.Provider value={apiKey}>{children}</ApiKeyContext.Provider>;
+  const [key, setKey] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  return (
+    <ApiKeyContext.Provider value={{ key: key, error: errorMessage }}>{children}</ApiKeyContext.Provider>
+  );
 }

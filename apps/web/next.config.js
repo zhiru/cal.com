@@ -574,7 +574,16 @@ if (!!process.env.NEXT_PUBLIC_SENTRY_DSN) {
     hideSourceMaps: true,
   };
 
-  plugins.push(withSentryConfig);
-}
+  const sentryWebpackPluginOptions = {
+    ignore: ["node_modules", "webpack.config.js"],
+  };
 
-module.exports = () => plugins.reduce((acc, next) => next(acc), nextConfig);
+  plugins.push(withSentryConfig);
+  module.exports = () =>
+    withSentryConfig(
+      plugins.reduce((acc, next) => next(acc), nextConfig),
+      sentryWebpackPluginOptions
+    );
+} else {
+  module.exports = () => plugins.reduce((acc, next) => next(acc), nextConfig);
+}

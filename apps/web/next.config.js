@@ -578,7 +578,6 @@ if (!!process.env.NEXT_PUBLIC_SENTRY_DSN) {
     ignore: ["node_modules", "webpack.config.js"],
   };
 
-  plugins.push(withSentryConfig);
   module.exports = () =>
     withSentryConfig(
       plugins.reduce((acc, next) => next(acc), nextConfig),

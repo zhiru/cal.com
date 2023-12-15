@@ -103,16 +103,17 @@ const createTeamAndAddUser = async (
   const data: PrismaType.TeamCreateInput = {
     name: `user-id-${user.id}'s Team ${isOrg ? "Org" : "Team"}`,
   };
+  if (isOrg) {
+    data.organizationSettings = {
+      create: {
+        orgAutoAcceptEmail: user.email.split("@")[1],
+        isOrganizationConfigured: false,
+        isOrganizationVerified: !!isOrgVerified,
+      },
+    };
+  }
   data.metadata = {
     ...(isUnpublished ? { requestedSlug: slug } : {}),
-    ...(isOrg
-      ? {
-          isOrganization: true,
-          isOrganizationVerified: !!isOrgVerified,
-          orgAutoAcceptEmail: user.email.split("@")[1],
-          isOrganizationConfigured: false,
-        }
-      : {}),
   };
   data.slug = !isUnpublished ? slug : undefined;
   if (isOrg && hasSubteam) {
@@ -122,6 +123,7 @@ const createTeamAndAddUser = async (
   }
   data.orgUsers = isOrg ? { connect: [{ id: user.id }] } : undefined;
   data.parent = organizationId ? { connect: { id: organizationId } } : undefined;
+
   const team = await prisma.team.create({
     data,
   });

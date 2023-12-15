@@ -10,7 +10,6 @@ import { getBookerUrl } from "@calcom/lib/server/getBookerUrl";
 import type { PrismaClient } from "@calcom/prisma";
 import { baseEventTypeSelect } from "@calcom/prisma";
 import { MembershipRole, SchedulingType } from "@calcom/prisma/enums";
-import { teamMetadataSchema } from "@calcom/prisma/zod-utils";
 import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 
 import { TRPCError } from "@trpc/server";
@@ -121,6 +120,7 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
                   userId: true,
                 },
               },
+              organizationSettings: true,
               eventTypes: {
                 select: teamEventTypeSelect,
                 orderBy: [
@@ -229,8 +229,7 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
     eventTypeGroups,
     user.teams
       .filter((mmship) => {
-        const metadata = teamMetadataSchema.parse(mmship.team.metadata);
-        if (metadata?.isOrganization) {
+        if (mmship.team.organizationSettings) {
           return false;
         } else {
           if (!input?.filters || !hasFilter(input?.filters)) {

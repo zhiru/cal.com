@@ -96,19 +96,20 @@ export const validateAndGetCorrectedUsernameInTeam = async (
         metadata: true,
         parentId: true,
       },
+      include: {
+        organizationSettings: true,
+      },
     });
 
     const teamData = { ...team, metadata: teamMetadataSchema.parse(team?.metadata) };
 
-    if (teamData.metadata?.isOrganization || teamData.parentId) {
-      const orgMetadata = teamData.metadata;
-      // Organization context -> org-context username check
+    if (teamData.organizationSettings || teamData.parentId) {
       const orgId = teamData.parentId || teamId;
       return validateAndGetCorrectedUsernameAndEmail({
         username,
         email,
         organizationId: orgId,
-        orgAutoAcceptEmail: orgMetadata?.orgAutoAcceptEmail || "",
+        orgAutoAcceptEmail: teamData.organizationSettings?.orgAutoAcceptEmail || "",
         isSignup,
       });
     } else {

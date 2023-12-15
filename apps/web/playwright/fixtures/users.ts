@@ -461,26 +461,24 @@ const createUserFixture = (user: UserWithIncludes, page: Page) => {
       await page.goto("/auth/logout");
     },
     getFirstTeam: async () => {
-      const memberships = await prisma.membership.findMany({
-        where: { userId: user.id },
-        include: { team: true },
+      const teams = await prisma.team.findMany({
+        where: { members: { some: { userId: user.id } } },
+        include: { members: true, organizationSettings: true },
       });
 
-      const membership = memberships
-        .map((membership) => {
+      const team = teams
+        .map((team) => {
           return {
-            ...membership,
-            team: {
-              ...membership.team,
-              metadata: teamMetadataSchema.parse(membership.team.metadata),
-            },
+            ...team,
+            metadata: teamMetadataSchema.parse(team.metadata),
           };
         })
-        .find((membership) => !membership.team?.metadata?.isOrganization);
-      if (!membership) {
+        .find((team) => !team.organizationSettings);
+
+      if (!team) {
         throw new Error("No team found for user");
       }
-      return membership;
+      return team;
     },
     getOrgMembership: async () => {
       return prisma.membership.findFirstOrThrow({

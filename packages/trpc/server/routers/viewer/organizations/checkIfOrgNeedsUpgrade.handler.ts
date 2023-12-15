@@ -15,25 +15,27 @@ export async function checkIfOrgNeedsUpgradeHandler({ ctx }: GetUpgradeableOptio
   if (!IS_TEAM_BILLING_ENABLED) return [];
 
   // Get all teams/orgs where the user is an owner
-  let teams = await prisma.membership.findMany({
+  let teams = await prisma.team.findMany({
     where: {
-      user: {
-        id: ctx.user.id,
+      members: {
+        some: {
+          user: {
+            id: ctx.user.id,
+          },
+          role: MembershipRole.OWNER,
+        },
       },
-      role: MembershipRole.OWNER,
-      team: {
-        parentId: null, // Since ORGS relay on their parent's subscription, we don't need to return them
-      },
+      parentId: null, // Since ORGS rely on their parent's subscription, we don't need to return them
     },
     include: {
-      team: true,
+      organizationSettings: true,
     },
   });
 
   /** We only need to return teams that don't have a `subscriptionId` on their metadata */
   teams = teams.filter((m) => {
-    const metadata = teamMetadataSchema.safeParse(m.team.metadata);
-    if (metadata.success && !metadata.data?.isOrganization) return false;
+    const metadata = teamMetadataSchema.safeParse(m.metadata);
+    if (m.organizationSettings) return false;
     if (metadata.success && metadata.data?.subscriptionId) return false;
     return true;
   });

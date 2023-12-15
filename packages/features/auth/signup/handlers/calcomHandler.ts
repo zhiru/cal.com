@@ -13,7 +13,7 @@ import { closeComUpsertTeamUser } from "@calcom/lib/sync/SyncServiceManager";
 import { validateAndGetCorrectedUsernameAndEmail } from "@calcom/lib/validateUsername";
 import { prisma } from "@calcom/prisma";
 import { IdentityProvider, MembershipRole } from "@calcom/prisma/enums";
-import { signupSchema, teamMetadataSchema } from "@calcom/prisma/zod-utils";
+import { signupSchema } from "@calcom/prisma/zod-utils";
 
 import { joinAnyChildTeamOnOrgInvite } from "../utils/organization";
 import {
@@ -126,10 +126,14 @@ async function handler(req: RequestWithUsernameStatus, res: NextApiResponse) {
       where: {
         id: foundToken.teamId,
       },
+      select: {
+        id: true,
+        name: true,
+        parentId: true,
+        organizationSettings: true,
+      },
     });
     if (team) {
-      const teamMetadata = teamMetadataSchema.parse(team?.metadata);
-
       const user = await prisma.user.upsert({
         where: { email },
         update: {
@@ -148,7 +152,7 @@ async function handler(req: RequestWithUsernameStatus, res: NextApiResponse) {
 
       // Wrapping in a transaction as if one fails we want to rollback the whole thing to preventa any data inconsistencies
       const membership = await prisma.$transaction(async (tx) => {
-        if (teamMetadata?.isOrganization) {
+        if (team?.organizationSettings) {
           await tx.user.update({
             where: {
               id: user.id,

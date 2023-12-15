@@ -59,28 +59,16 @@ export const checkIfUserBelongsToActiveTeam = <T extends UserTeams>(user: T) =>
 const checkIfUserShouldBelongToOrg = async (idP: IdentityProvider, email: string) => {
   const [orgUsername, apexDomain] = email.split("@");
   if (!ORGANIZATIONS_AUTOLINK || idP !== "GOOGLE") return { orgUsername, orgId: undefined };
-  const existingOrg = await prisma.team.findFirst({
+  const existingOrg = await prisma.organizationSettings.findFirst({
     where: {
-      AND: [
-        {
-          metadata: {
-            path: ["isOrganizationVerified"],
-            equals: true,
-          },
-        },
-        {
-          metadata: {
-            path: ["orgAutoAcceptEmail"],
-            equals: apexDomain,
-          },
-        },
-      ],
+      isOrganizationVerified: true,
+      orgAutoAcceptEmail: apexDomain,
     },
     select: {
-      id: true,
+      teamId: true,
     },
   });
-  return { orgUsername, orgId: existingOrg?.id };
+  return { orgUsername, orgId: existingOrg?.teamId };
 };
 
 const providers: Provider[] = [

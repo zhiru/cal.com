@@ -35,6 +35,9 @@ jobs:
               - 'apps/web/**'
               - 'packages/embeds/**'
               - 'playwright.config.ts'
+            actions:
+              - '.github/workflows/**'
+
       - uses: ./.github/workflows/lint.yml
         name: Linters
       - uses: ./.github/workflows/production-build.yml

@@ -16,7 +16,6 @@ jobs:
       app-store: ${{ steps.filter.outputs.app-store }}
       embed: ${{ steps.filter.outputs.embed }}
       embed-react: ${{ steps.filter.outputs.embed-react }}
-    secrets: inherit
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/dangerous-git-checkout

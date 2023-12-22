@@ -16,6 +16,7 @@ jobs:
       app-store: ${{ steps.filter.outputs.app-store }}
       embed: ${{ steps.filter.outputs.embed }}
       embed-react: ${{ steps.filter.outputs.embed-react }}
+    secrets: inherit
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/dangerous-git-checkout
@@ -37,10 +38,8 @@ jobs:
               - 'playwright.config.ts'
       - uses: ./.github/workflows/lint.yml
         name: Linters
-        secrets: inherit
       - uses: ./.github/workflows/production-build.yml
         name: Production build
-        secrets: inherit
 
   e2e:
     name: E2E tests

@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  changes:
-    name: Detect changes
+  lint-build:
+    name: Lint & Build
     runs-on: buildjet-4vcpu-ubuntu-2204
     permissions:
       pull-requests: read
@@ -35,20 +35,16 @@ jobs:
               - 'apps/web/**'
               - 'packages/embeds/**'
               - 'playwright.config.ts'
-
-  lint:
-    name: Linters
-    uses: ./.github/workflows/lint.yml
-    secrets: inherit
-
-  build:
-    name: Production build
-    uses: ./.github/workflows/production-build.yml
-    secrets: inherit
+      - uses: ./.github/workflows/lint.yml
+        name: Linters
+        secrets: inherit
+      - uses: ./.github/workflows/production-build.yml
+        name: Production build
+        secrets: inherit
 
   e2e:
     name: E2E tests
-    needs: [changes, lint, build]
+    needs: [lint-build]
     uses: ./.github/workflows/e2e.yml
     secrets: inherit
 

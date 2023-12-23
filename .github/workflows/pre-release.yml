@@ -13,8 +13,6 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/dangerous-git-checkout
       - uses: ./.github/workflows/lint.yml
         name: Linters
       - uses: ./.github/workflows/production-build.yml

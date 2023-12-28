@@ -110,7 +110,7 @@ export function buildDateRanges({
     ...groupedDateOverrides,
   }).map(
     // remove 0-length overrides that were kept to cancel out working dates until now.
-    (ranges) => ranges.filter((range) => range.isEmpty())
+    (ranges) => ranges.filter((range) => !range.isEmpty())
   );
   // flatten, cast to Dayjs for compatibility
   return dateRanges.reduce((dateRanges: { start: Dayjs; end: Dayjs }[], intervals) => {

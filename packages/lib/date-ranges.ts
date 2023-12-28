@@ -1,10 +1,12 @@
+import { DateTime, Interval } from "luxon";
+
 import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import type { Availability } from "@calcom/prisma/client";
 
 export type DateRange = {
-  start: Dayjs;
-  end: Dayjs;
+  start: DateTime;
+  end: DateTime;
 };
 
 export type DateOverride = Pick<Availability, "date" | "startTime" | "endTime">;
@@ -12,74 +14,54 @@ export type WorkingHours = Pick<Availability, "days" | "startTime" | "endTime">;
 
 export function processWorkingHours({
   item,
-  timeZone,
   dateFrom,
   dateTo,
 }: {
   item: WorkingHours;
-  timeZone: string;
-  dateFrom: Dayjs;
+  dateFrom: DateTime;
   dateTo: Dayjs;
 }) {
   const utcDateTo = dateTo.utc();
   const results = [];
-  for (let date = dateFrom.startOf("day"); utcDateTo.isAfter(date); date = date.add(1, "day")) {
-    const fromOffset = dateFrom.startOf("day").utcOffset();
-    const offset = date.tz(timeZone).utcOffset();
-
+  for (
+    let date = dateFrom.startOf("day");
+    utcDateTo.valueOf() > date.valueOf();
+    date = date.plus({ days: 1 })
+  ) {
     // it always has to be start of the day (midnight) even when DST changes
-    const dateInTz = date.add(fromOffset - offset, "minutes").tz(timeZone);
-    if (!item.days.includes(dateInTz.day())) {
+    if (!item.days.includes(date.weekday)) {
       continue;
     }
 
-    let start = dateInTz
-      .add(item.startTime.getUTCHours(), "hours")
-      .add(item.startTime.getUTCMinutes(), "minutes");
+    const start = date.plus({ hours: item.startTime.getUTCHours(), minutes: item.startTime.getUTCMinutes() });
+    const end = date.plus({ hours: item.endTime.getUTCHours(), minutes: item.endTime.getUTCMinutes() });
 
-    let end = dateInTz.add(item.endTime.getUTCHours(), "hours").add(item.endTime.getUTCMinutes(), "minutes");
-
-    const offsetBeginningOfDay = dayjs(start.format("YYYY-MM-DD hh:mm")).tz(timeZone).utcOffset();
-    const offsetDiff = start.utcOffset() - offsetBeginningOfDay; // there will be 60 min offset on the day day of DST change
-
-    start = start.add(offsetDiff, "minute");
-    end = end.add(offsetDiff, "minute");
-
-    const startResult = dayjs.max(start, dateFrom);
-    const endResult = dayjs.min(end, dateTo.tz(timeZone));
-
-    if (endResult.isBefore(startResult)) {
-      // if an event ends before start, it's not a result.
-      continue;
-    }
-
-    results.push({
-      start: startResult,
-      end: endResult,
-    });
+    const interval = Interval.fromDateTimes(start, end);
+    if (interval.isValid) results.push(interval);
   }
   return results;
 }
 
-export function processDateOverride({ item, timeZone }: { item: DateOverride; timeZone: string }) {
-  const startDate = dayjs
-    .utc(item.date)
+export function processDateOverride({
+  item,
+  timeZone,
+}: {
+  item: Omit<DateOverride, "date"> & { date: Date };
+  timeZone: string;
+}): Interval<true> {
+  const startDate = DateTime.fromJSDate(item.date, { zone: "utc" }) // Convert to Luxon DateTime object in UTC
     .startOf("day")
-    .add(item.startTime.getUTCHours(), "hours")
-    .add(item.startTime.getUTCMinutes(), "minutes")
-    .second(0)
-    .tz(timeZone, true);
-  const endDate = dayjs
-    .utc(item.date)
+    .plus({ hours: item.startTime.getUTCHours(), minutes: item.startTime.getUTCMinutes() })
+    .setZone(timeZone, { keepLocalTime: true });
+
+  const endDate = DateTime.fromJSDate(item.date, { zone: "utc" }) // Convert to Luxon DateTime object in UTC
     .startOf("day")
-    .add(item.endTime.getUTCHours(), "hours")
-    .add(item.endTime.getUTCMinutes(), "minutes")
-    .second(0)
-    .tz(timeZone, true);
-  return {
-    start: startDate,
-    end: endDate,
-  };
+    .plus({ hours: item.endTime.getUTCHours(), minutes: item.endTime.getUTCMinutes() })
+    .setZone(timeZone, { keepLocalTime: true });
+
+  const interval = Interval.fromDateTimes(startDate, endDate);
+  if (!interval.isValid) throw new Error("Invalid DateOverride");
+  return interval;
 }
 
 export function buildDateRanges({
@@ -92,22 +74,20 @@ export function buildDateRanges({
   availability: (DateOverride | WorkingHours)[];
   dateFrom: Dayjs;
   dateTo: Dayjs;
-}): DateRange[] {
-  const dateFromOrganizerTZ = dateFrom.tz(timeZone);
+}) {
+  const zonedDateFrom = DateTime.fromJSDate(dateFrom.toDate()).setZone(timeZone);
   const groupedWorkingHours = groupByDate(
-    availability.reduce((processed: DateRange[], item) => {
+    availability.reduce((processed: Interval[], item) => {
       if ("days" in item) {
-        processed = processed.concat(
-          processWorkingHours({ item, timeZone, dateFrom: dateFromOrganizerTZ, dateTo })
-        );
+        processed = processed.concat(processWorkingHours({ item, dateFrom: zonedDateFrom, dateTo }));
       }
       return processed;
     }, [])
   );
   const groupedDateOverrides = groupByDate(
-    availability.reduce((processed: DateRange[], item) => {
-      if ("date" in item && !!item.date) {
-        processed.push(processDateOverride({ item, timeZone }));
+    availability.reduce((processed: Interval[], item) => {
+      if ("date" in item && item.date !== null) {
+        processed.push(processDateOverride({ item: { ...item, date: item.date }, timeZone }));
       }
       return processed;
     }, [])
@@ -118,21 +98,32 @@ export function buildDateRanges({
     ...groupedDateOverrides,
   }).map(
     // remove 0-length overrides that were kept to cancel out working dates until now.
-    (ranges) => ranges.filter((range) => range.start.valueOf() !== range.end.valueOf())
+    (ranges) => ranges.filter((range) => range.isEmpty())
   );
-
-  return dateRanges.flat();
+  // flatten, cast to Dayjs for compatibility
+  return dateRanges.reduce((dateRanges: { start: Dayjs; end: Dayjs }[], intervals) => {
+    intervals.forEach((interval) => {
+      if (!interval.start || !interval.end) return;
+      dateRanges.push({
+        start: dayjs.tz(interval.start.toJSDate(), timeZone),
+        end: dayjs.tz(interval.end.toJSDate(), timeZone),
+      });
+    });
+    return dateRanges;
+  }, []);
 }
 
-export function groupByDate(ranges: DateRange[]): { [x: string]: DateRange[] } {
+export function groupByDate(ranges: Interval[]): { [x: string]: Interval[] } {
   const results = ranges.reduce(
     (
       previousValue: {
-        [date: string]: DateRange[];
+        [date: string]: Interval[];
       },
       currentValue
     ) => {
-      const dateString = dayjs(currentValue.start).format("YYYY-MM-DD");
+      if (!currentValue.start) return previousValue;
+
+      const dateString = currentValue.start.toFormat("yyyy-MM-dd");
 
       previousValue[dateString] =
         typeof previousValue[dateString] === "undefined"
@@ -154,12 +145,7 @@ export function intersect(ranges: DateRange[][]): DateRange[] {
   // For each of the remaining users, find the intersection of their ranges with the current common availability
   for (let i = 1; i < ranges.length; i++) {
     const userRanges = ranges[i];
-
-    const intersectedRanges: {
-      start: Dayjs;
-      end: Dayjs;
-    }[] = [];
-
+    const intersectedRanges: DateRange[] = [];
     commonAvailability.forEach((commonRange) => {
       userRanges.forEach((userRange) => {
         const intersection = getIntersection(commonRange, userRange);
@@ -182,40 +168,68 @@ export function intersect(ranges: DateRange[][]): DateRange[] {
 }
 
 function getIntersection(range1: DateRange, range2: DateRange) {
-  const start = range1.start.utc().isAfter(range2.start) ? range1.start : range2.start;
-  const end = range1.end.utc().isBefore(range2.end) ? range1.end : range2.end;
-  if (start.utc().isBefore(end)) {
+  const start = DateTime.max(range1.start, range2.start);
+  const end = DateTime.min(range1.end, range2.end);
+  if (start < end) {
     return { start, end };
   }
   return null;
 }
 
-export function subtract(
-  sourceRanges: (DateRange & { [x: string]: unknown })[],
-  excludedRanges: DateRange[]
-) {
-  const result: DateRange[] = [];
+export function subtract(sourceRanges: Interval[], excludedRanges: Interval[]): Interval[] {
+  const resultIntervals: Interval[] = [];
 
-  for (const { start: sourceStart, end: sourceEnd, ...passThrough } of sourceRanges) {
-    let currentStart = sourceStart;
+  for (const sourceInterval of sourceRanges) {
+    let currentIntervals: Interval[] = [sourceInterval];
 
-    const overlappingRanges = excludedRanges.filter(
-      ({ start, end }) => start.isBefore(sourceEnd) && end.isAfter(sourceStart)
-    );
-
-    overlappingRanges.sort((a, b) => (a.start.isAfter(b.start) ? 1 : -1));
-
-    for (const { start: excludedStart, end: excludedEnd } of overlappingRanges) {
-      if (excludedStart.isAfter(currentStart)) {
-        result.push({ start: currentStart, end: excludedStart });
-      }
-      currentStart = excludedEnd.isAfter(currentStart) ? excludedEnd : currentStart;
+    for (const exclusionInterval of excludedRanges) {
+      currentIntervals = currentIntervals.flatMap((interval) =>
+        subtractSingleInterval(interval, exclusionInterval)
+      );
     }
 
-    if (sourceEnd.isAfter(currentStart)) {
-      result.push({ start: currentStart, end: sourceEnd, ...passThrough });
-    }
+    resultIntervals.push(...currentIntervals);
   }
 
-  return result;
+  return resultIntervals;
+}
+
+function subtractSingleInterval(interval: Interval, exclusion: Interval): Interval[] {
+  if (!interval.isValid || !exclusion.isValid) return [];
+
+  if (exclusion.engulfs(interval)) return [];
+
+  if (interval.engulfs(exclusion)) {
+    return splitInterval(interval, exclusion.start, exclusion.end);
+  }
+
+  if (interval.overlaps(exclusion)) {
+    return excludeOverlap(interval, exclusion);
+  }
+
+  return [interval];
+}
+
+function splitInterval(
+  interval: Interval,
+  splitStart: DateTime | null,
+  splitEnd: DateTime | null
+): Interval[] {
+  if (!splitStart || !splitEnd || !interval.start || !interval.end) return [interval];
+  return [
+    Interval.fromDateTimes(interval.start, splitStart),
+    Interval.fromDateTimes(splitEnd, interval.end),
+  ].filter((i) => i.isValid && !i.isEmpty());
+}
+
+function excludeOverlap(interval: Interval, exclusion: Interval): Interval[] {
+  if (!interval.start || !interval.end || !exclusion.start || !exclusion.end) return [interval];
+  const newStart = DateTime.max(interval.start, exclusion.end);
+  const newEnd = DateTime.min(interval.end, exclusion.start);
+  if (newStart < newEnd) {
+    // This means there's an overlap and we create a new interval
+    return [Interval.fromDateTimes(newStart, newEnd)];
+  }
+  // No overlap, return an empty array
+  return [];
 }

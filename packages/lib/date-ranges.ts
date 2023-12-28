@@ -5,8 +5,8 @@ import dayjs from "@calcom/dayjs";
 import type { Availability } from "@calcom/prisma/client";
 
 export type DateRange = {
-  start: DateTime;
-  end: DateTime;
+  start: Dayjs;
+  end: Dayjs;
 };
 
 export type DateOverride = Pick<Availability, "date" | "startTime" | "endTime">;
@@ -64,6 +64,18 @@ export function processDateOverride({
   return interval;
 }
 
+function _castLuxonDayjsInterop(interval: Interval<true>): DateRange {
+  return {
+    start: dayjs.tz(interval.start.toJSDate(), interval.start?.zoneName),
+    end: dayjs.tz(interval.end.toJSDate(), interval.end?.zoneName),
+  };
+}
+
+function _castDayjsLuxonInterop(dateRange: DateRange): Interval<true> {
+  const interval = Interval.fromDateTimes(dateRange.start.toDate(), dateRange.end.toDate());
+  if (!interval.isValid) throw new Error("Invalid DateRange");
+  return interval;
+}
 export function buildDateRanges({
   availability,
   timeZone /* Organizer timeZone */,
@@ -104,10 +116,7 @@ export function buildDateRanges({
   return dateRanges.reduce((dateRanges: { start: Dayjs; end: Dayjs }[], intervals) => {
     intervals.forEach((interval) => {
       if (!interval.start || !interval.end) return;
-      dateRanges.push({
-        start: dayjs.tz(interval.start.toJSDate(), timeZone),
-        end: dayjs.tz(interval.end.toJSDate(), timeZone),
-      });
+      dateRanges.push(_castLuxonDayjsInterop(interval));
     });
     return dateRanges;
   }, []);
@@ -137,18 +146,19 @@ export function groupByDate(ranges: Interval[]): { [x: string]: Interval[] } {
   return results;
 }
 
-export function intersect(ranges: DateRange[][]): DateRange[] {
-  if (!ranges.length) return [];
+export function intersect(_ranges: DateRange[][]): DateRange[] {
+  if (!_ranges.length) return [];
+  const ranges = _ranges.map((ranges) => ranges.map(_castDayjsLuxonInterop));
   // Get the ranges of the first user
   let commonAvailability = ranges[0];
 
   // For each of the remaining users, find the intersection of their ranges with the current common availability
   for (let i = 1; i < ranges.length; i++) {
     const userRanges = ranges[i];
-    const intersectedRanges: DateRange[] = [];
+    const intersectedRanges: Interval[] = [];
     commonAvailability.forEach((commonRange) => {
       userRanges.forEach((userRange) => {
-        const intersection = getIntersection(commonRange, userRange);
+        const intersection = commonRange.intersection(userRange);
         if (intersection !== null) {
           // If the current common range intersects with the user range, add the intersected time range to the new array
           intersectedRanges.push(intersection);
@@ -164,25 +174,19 @@ export function intersect(ranges: DateRange[][]): DateRange[] {
     return [];
   }
 
-  return commonAvailability;
+  return commonAvailability.map((interval) => _castLuxonDayjsInterop(interval));
 }
 
-function getIntersection(range1: DateRange, range2: DateRange) {
-  const start = DateTime.max(range1.start, range2.start);
-  const end = DateTime.min(range1.end, range2.end);
-  if (start < end) {
-    return { start, end };
-  }
-  return null;
-}
-
-export function subtract(sourceRanges: Interval[], excludedRanges: Interval[]): Interval[] {
+export function subtract(sourceRanges: DateRange[], excludedRanges: DateRange[]): DateRange[] {
   const resultIntervals: Interval[] = [];
 
-  for (const sourceInterval of sourceRanges) {
+  const _sourceRanges = sourceRanges.map(_castDayjsLuxonInterop);
+  const _excludedRanges = excludedRanges.map(_castDayjsLuxonInterop);
+
+  for (const sourceInterval of _sourceRanges) {
     let currentIntervals: Interval[] = [sourceInterval];
 
-    for (const exclusionInterval of excludedRanges) {
+    for (const exclusionInterval of _excludedRanges) {
       currentIntervals = currentIntervals.flatMap((interval) =>
         subtractSingleInterval(interval, exclusionInterval)
       );
@@ -191,7 +195,7 @@ export function subtract(sourceRanges: Interval[], excludedRanges: Interval[]): 
     resultIntervals.push(...currentIntervals);
   }
 
-  return resultIntervals;
+  return resultIntervals.map(_castLuxonDayjsInterop);
 }
 
 function subtractSingleInterval(interval: Interval, exclusion: Interval): Interval[] {

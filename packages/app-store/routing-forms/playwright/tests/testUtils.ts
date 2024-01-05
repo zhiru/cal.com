@@ -59,7 +59,8 @@ export async function addOneFieldAndDescriptionAndSaveForm(
 
 export async function saveCurrentForm(page: Page) {
   await page.click('[data-testid="update-form"]');
-  await page.waitForSelector(".data-testid-toast-success");
+  const successToast = page.locator(".data-testid-toast-success");
+  await successToast.waitFor();
 }
 
 export async function verifySelectOptions(

@@ -377,7 +377,8 @@ test.describe("Routing Forms", () => {
 
 async function disableForm(page: Page) {
   await page.click('[data-testid="toggle-form"] [value="on"]');
-  await page.waitForSelector(".data-testid-toast-success");
+  const successToast = page.locator(".data-testid-toast-success");
+  await successToast.waitFor();
 }
 
 async function expectCurrentFormToHaveFields(

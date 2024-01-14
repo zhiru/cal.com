@@ -156,6 +156,7 @@ const matcherConfigUserTypeEmbedRoute = {
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["next-i18next"],
+    webpackBuildWorker: true,
   },
   i18n: {
     ...i18n,

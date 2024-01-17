@@ -9,9 +9,9 @@ import { useLayoutEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ImageUploadField } from "@calcom/features/settings/ImageUploadField";
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import { IS_TEAM_BILLING_ENABLED, WEBAPP_URL } from "@calcom/lib/constants";
-import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { getTeamUrlSync } from "@calcom/lib/getBookerUrl/client";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useParamsWithFallback } from "@calcom/lib/hooks/useParamsWithFallback";
@@ -24,14 +24,12 @@ import { MembershipRole } from "@calcom/prisma/enums";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
 import {
-  Avatar,
   Button,
   ConfirmationDialogContent,
   Dialog,
   DialogTrigger,
   Editor,
   Form,
-  ImageUploader,
   Label,
   LinkIconButton,
   Meta,
@@ -259,7 +257,7 @@ const TeamProfileForm = ({ team }: TeamProfileFormProps) => {
 
   const defaultValues: FormValues = {
     name: team?.name || "",
-    logo: team?.logo || "",
+    logo: team?.logoUrl || team?.logo || "",
     bio: team?.bio || "",
     slug: team?.slug || ((team?.metadata as Prisma.JsonObject)?.requestedSlug as string) || "",
   };
@@ -309,6 +307,11 @@ const TeamProfileForm = ({ team }: TeamProfileFormProps) => {
       <div className="border-subtle border-x px-4 py-8 sm:px-6">
         {!team.parent && (
           <div className="flex items-center">
+            <ImageUploadField control={form.control} name="logo" />
+          </div>
+        )}
+        {/*!team.parent && (
+          <div className="flex items-center">
             <Controller
               control={form.control}
               name="logo"
@@ -348,7 +351,7 @@ const TeamProfileForm = ({ team }: TeamProfileFormProps) => {
               }}
             />
           </div>
-        )}
+            )*/}
 
         <Controller
           control={form.control}

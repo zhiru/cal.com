@@ -1,7 +1,9 @@
 import type { Prisma } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
 
 import { IS_TEAM_BILLING_ENABLED } from "@calcom/lib/constants";
 import { isTeamAdmin } from "@calcom/lib/server/queries/teams";
+import { resizeBase64Image } from "@calcom/lib/server/resizeBase64Image";
 import { closeComUpdateTeam } from "@calcom/lib/sync/SyncServiceManager";
 import { prisma } from "@calcom/prisma";
 import { teamMetadataSchema } from "@calcom/prisma/zod-utils";
@@ -16,6 +18,30 @@ type UpdateOptions = {
     user: NonNullable<TrpcSessionUser>;
   };
   input: TUpdateInputSchema;
+};
+
+const uploadLogo = async ({ teamId, logo: data }: { teamId: number; logo: string }) => {
+  const objectKey = uuidv4();
+
+  await prisma.avatar.upsert({
+    where: {
+      teamId_userId: {
+        teamId,
+        userId: 0,
+      },
+    },
+    create: {
+      teamId,
+      data,
+      objectKey,
+    },
+    update: {
+      data,
+      objectKey,
+    },
+  });
+
+  return `/api/avatar/${objectKey}.png`;
 };
 
 export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
@@ -46,7 +72,6 @@ export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
 
   const data: Prisma.TeamUpdateArgs["data"] = {
     name: input.name,
-    logo: input.logo,
     bio: input.bio,
     hideBranding: input.hideBranding,
     isPrivate: input.isPrivate,
@@ -55,6 +80,15 @@ export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
     darkBrandColor: input.darkBrandColor,
     theme: input.theme,
   };
+
+  if (input.logo && input.logo.startsWith("data:image/png;base64,")) {
+    const logo = await resizeBase64Image(input.logo);
+    data.logoUrl = await uploadLogo({
+      logo,
+      teamId: input.id,
+    });
+    data.logo = logo;
+  }
 
   if (
     input.slug &&

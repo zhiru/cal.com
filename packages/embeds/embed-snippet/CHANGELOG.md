@@ -1,5 +1,13 @@
 # @calcom/embed-snippet
 
+## 1.1.3
+
+### Patch Changes
+
+- Namespacing support
+- Updated dependencies
+  - @calcom/embed-core@1.3.3
+
 ## 1.1.2
 
 ### Patch Changes

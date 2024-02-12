@@ -10,6 +10,8 @@ Please see the respective folder READMEs for details on them.
 ## Publishing to NPM. It will soon be automated using changesets github action
 
 To publish the packages. Following steps should be followed. All commands are to be run at the root.
+Make sure to authenticate yourself with yarn using the following command.
+`yarn npm login`
 
 1. `yarn changeset` -> Creates changelog files and adds summary to changelog. Select embed packages only here.
 2. `yarn changeset version` -> Bumps the versions as required

@@ -52,6 +52,8 @@ export function createSwaggerSpec({
     ];
   });
 
+  console.log("-------apis", apis);
+
   // Append base path server element to server array
   // Conditions: basePath is specified. Server array is not defined.
   const definition = {

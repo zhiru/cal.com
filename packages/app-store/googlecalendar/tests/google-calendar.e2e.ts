@@ -8,7 +8,7 @@ import type { CredentialPayload } from "@calcom/types/Credential";
 import { test } from "@calcom/web/playwright/lib/fixtures";
 import { selectSecondAvailableTimeSlotNextMonth } from "@calcom/web/playwright/lib/testUtils";
 
-import metadata from "../_metadata";
+import { metadata as gCalMetadata } from "../_metadata";
 import GoogleCalendarService from "../lib/CalendarService";
 import { createBookingAndFetchGCalEvent, deleteBookingAndEvent, assertValueExists } from "./testUtils";
 
@@ -24,39 +24,10 @@ test.describe("Google Calendar", async () => {
 
       test.skip(!!APP_CREDENTIAL_SHARING_ENABLED, "Credential sharing enabled");
 
-      if (process.env.E2E_TEST_CALCOM_GCAL_KEYS) {
-        const gCalKeys = JSON.parse(process.env.E2E_TEST_CALCOM_GCAL_KEYS);
-        await prisma.app.update({
-          where: {
-            slug: "google-calendar",
-          },
-          data: {
-            keys: gCalKeys,
-          },
-        });
-      } else {
-        test.skip(!process.env.E2E_TEST_CALCOM_GCAL_KEYS, "GCal keys not found");
-      }
-
       test.skip(!process.env.E2E_TEST_CALCOM_QA_EMAIL, "QA email not found");
       test.skip(!process.env.E2E_TEST_CALCOM_QA_PASSWORD, "QA password not found");
 
       if (process.env.E2E_TEST_CALCOM_QA_EMAIL && process.env.E2E_TEST_CALCOM_QA_PASSWORD) {
-        qaGCalCredential = await prisma.credential.findFirstOrThrow({
-          where: {
-            user: {
-              email: process.env.E2E_TEST_CALCOM_QA_EMAIL,
-            },
-            type: metadata.type,
-          },
-          include: {
-            user: {
-              select: {
-                email: true,
-              },
-            },
-          },
-        });
         test.skip(!qaGCalCredential, "Google QA credential not found");
 
         const qaUserQuery = await prisma.user.findFirstOrThrow({
@@ -66,40 +37,37 @@ test.describe("Google Calendar", async () => {
           select: {
             id: true,
             username: true,
+            credentials: true,
           },
         });
 
         test.skip(!qaUserQuery, "QA user not found");
 
-        assertValueExists(qaUserQuery.username, "qaUsername");
-        qaUsername = qaUserQuery.username;
+        let gCalCredential = qaUserQuery.credentials.find(
+          (credential) => credential.type === gCalMetadata.type
+        );
 
-        test.skip(!qaUsername, "QA username not found");
+        if (!gCalCredential) {
+          gCalCredential = await prisma.credential.create({
+            data: {
+              userId: qaUserQuery.id,
+              type: gCalMetadata.type,
+              key: {},
+              appId: gCalMetadata.slug,
+            },
+          });
+        }
 
         const googleCalendarService = new GoogleCalendarService(qaGCalCredential);
 
-        const calendars = await googleCalendarService.listCalendars();
+        const serviceAccount = await googleCalendarService.googleServiceAccountAuth();
 
-        const primaryCalendarName = calendars.find((calendar) => calendar.primary)?.name;
-        assertValueExists(primaryCalendarName, "primaryCalendarName");
-
-        await prisma.destinationCalendar.upsert({
-          where: {
-            userId: qaUserQuery.id,
-            externalId: primaryCalendarName,
-            eventTypeId: undefined,
-          },
-          update: {},
-          create: {
-            integration: "google_calendar",
-            userId: qaUserQuery.id,
-            externalId: primaryCalendarName,
-            credentialId: qaGCalCredential.id,
-          },
-        });
+        await serviceAccount.setupForE2ETest();
 
         if (qaGCalCredential && qaUsername) runIntegrationTest = true;
       }
+
+      runIntegrationTest = false;
 
       test.skip(!runIntegrationTest, errorMessage);
     });

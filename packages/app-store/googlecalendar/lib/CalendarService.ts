@@ -24,6 +24,7 @@ import type { CredentialPayload } from "@calcom/types/Credential";
 import type { ParseRefreshTokenResponse } from "../../_utils/oauth/parseRefreshTokenResponse";
 import parseRefreshTokenResponse from "../../_utils/oauth/parseRefreshTokenResponse";
 import refreshOAuthTokens from "../../_utils/oauth/refreshOAuthTokens";
+import { scopes } from "../api/add";
 import { getGoogleAppKeys } from "./getGoogleAppKeys";
 import { googleCredentialSchema } from "./googleCredentialSchema";
 
@@ -70,10 +71,89 @@ export default class GoogleCalendarService implements Calendar {
   constructor(credential: CredentialPayload) {
     this.integrationName = "google_calendar";
     this.credential = credential;
-    this.auth = this.googleAuth(credential);
+    this.auth = process.env.E2E_TEST_CALCOM_GCAL_SERVICE_KEYS
+      ? this.googleServiceAccountAuth()
+      : this.googleAuth(credential);
     this.log = logger.getSubLogger({ prefix: [`[[lib] ${this.integrationName}`] });
     this.credential = credential;
   }
+
+  public googleServiceAccountAuth = () => {
+    if (!process.env.E2E_TEST_CALCOM_GCAL_SERVICE_KEYS) {
+      throw new Error("GCal Service Keys not found");
+    }
+
+    const serviceAccountAuth = new google.auth.GoogleAuth({
+      credentials: JSON.parse(process.env.E2E_TEST_CALCOM_GCAL_SERVICE_KEYS),
+      scopes: [...scopes, "https://www.googleapis.com/auth/calendar"],
+    });
+
+    return {
+      setupForE2ETest: async () => {
+        const calendar = google.calendar({
+          version: "v3",
+          auth: serviceAccountAuth,
+        });
+        // Check to see if the service account has a calendar
+        const calendarList = await calendar.calendarList.list();
+        let primaryCalendar = calendarList.data.items ? calendarList.data.items[0] : null;
+        if (!calendarList.data.items) {
+          // If not, create one
+          primaryCalendar = await calendar.calendars.insert({
+            requestBody: {
+              summary: "Calcom QA",
+            },
+          });
+        }
+
+        // Ensure that the calendar has an external id
+        if (!primaryCalendar?.id) {
+          throw new Error("External calendarId is not present");
+        }
+
+        // Ensure that the credential has the QA userId
+        if (!this.credential.userId) {
+          throw new Error("QA credential does not have a userId");
+        }
+
+        // Set the calendar to be the selected calendar
+        await prisma.selectedCalendar.upsert({
+          where: {
+            userId_integration_externalId: {
+              userId: this.credential.userId,
+              integration: "google_calendar",
+              externalId: primaryCalendar?.id,
+            },
+          },
+          update: {},
+          create: {
+            userId: this.credential.userId,
+            externalId: primaryCalendar.id,
+            integration: "google_calendar",
+            credentialId: this.credential.id,
+          },
+        });
+
+        // Set the calendar to be the destination calendar
+        await prisma.destinationCalendar.upsert({
+          where: {
+            userId: this.credential.userId,
+            externalId: primaryCalendar.id,
+          },
+          update: {},
+          create: {
+            userId: this.credential.userId,
+            externalId: primaryCalendar.id,
+            integration: "google_calendar",
+            credentialId: this.credential.id,
+          },
+        });
+      },
+      getToken: async () => {
+        return serviceAccountAuth;
+      },
+    };
+  };
 
   private googleAuth = (credential: CredentialPayload) => {
     const googleCredentials = googleCredentialSchema.parse(credential.key);
@@ -603,6 +683,7 @@ export default class GoogleCalendarService implements Calendar {
     const calendar = await this.authedCalendar();
     try {
       const cals = await calendar.calendarList.list({ fields: "items(id,summary,primary,accessRole)" });
+      console.log("🚀 ~ GoogleCalendarService ~ listCalendars ~ cals:", cals);
       if (!cals.data.items) return [];
       return cals.data.items.map(
         (cal) =>

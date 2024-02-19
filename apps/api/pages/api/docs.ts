@@ -142,7 +142,7 @@ const swaggerHandler = withSwagger({
       { name: "selected-calendars" },
     ],
   },
-  apiFolder: ".",
+  apiFolder: "/vercel/path0/apps/api/pages/api",
 });
 
 export default swaggerHandler();

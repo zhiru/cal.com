@@ -142,7 +142,7 @@ const swaggerHandler = withSwagger({
       { name: "selected-calendars" },
     ],
   },
-  apiFolder: "pages/api",
+  apiFolder: ".",
 });
 
 export default swaggerHandler();

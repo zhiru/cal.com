@@ -1,6 +1,6 @@
-import { withSwagger } from "next-swagger-doc";
-
 import pjson from "~/package.json";
+
+import { withSwagger } from "./customSwagger";
 
 const swaggerHandler = withSwagger({
   definition: {
@@ -142,7 +142,7 @@ const swaggerHandler = withSwagger({
       { name: "selected-calendars" },
     ],
   },
-  apiFolder: "/apps/api/pages/api",
+  apiFolder: "pages/api",
 });
 
 export default swaggerHandler();

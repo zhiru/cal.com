@@ -304,4 +304,4 @@ function build(options) {
   return finalize(specification, options);
 }
 
-module.exports = { prepare, build, organize, finalize, format };
+export { prepare, build, organize, finalize, format };

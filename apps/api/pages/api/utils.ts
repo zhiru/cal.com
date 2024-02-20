@@ -140,10 +140,12 @@ function mergeDeep(first, second) {
   return mergeWith({}, first, second, (a, b) => (b === null ? a : undefined));
 }
 
-module.exports.mergeDeep = mergeDeep;
-module.exports.convertGlobPaths = convertGlobPaths;
-module.exports.hasEmptyProperty = hasEmptyProperty;
-module.exports.extractYamlFromJsDoc = extractYamlFromJsDoc;
-module.exports.extractAnnotations = extractAnnotations;
-module.exports.isTagPresentInTags = isTagPresentInTags;
-module.exports.loadDefinition = loadDefinition;
+export {
+  mergeDeep,
+  convertGlobPaths,
+  hasEmptyProperty,
+  extractYamlFromJsDoc,
+  extractAnnotations,
+  isTagPresentInTags,
+  loadDefinition,
+};

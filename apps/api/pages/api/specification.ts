@@ -1,15 +1,15 @@
-const doctrine = require("doctrine");
-const parser = require("swagger-parser");
-const YAML = require("yaml");
+import doctrine from "doctrine";
+import parser from "swagger-parser";
+import YAML from "yaml";
 
-const {
+import {
   hasEmptyProperty,
   convertGlobPaths,
   extractAnnotations,
   mergeDeep,
   extractYamlFromJsDoc,
   isTagPresentInTags,
-} = require("./utils");
+} from "./utils";
 
 /**
  * Prepare the swagger/openapi specification object.
@@ -18,6 +18,7 @@ const {
  * @returns {object} swaggerObject
  */
 function prepare(definition) {
+  console.log("---------------------prepare");
   const swaggerObject = JSON.parse(JSON.stringify(definition));
   const specificationTemplate = {
     v2: ["paths", "definitions", "responses", "parameters", "securityDefinitions"],

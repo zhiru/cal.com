@@ -1,7 +1,7 @@
-const fs = require("fs");
-const path = require("path");
-const glob = require("glob");
-const mergeWith = require("lodash.mergewith");
+import fs from "fs";
+import glob from "glob";
+import mergeWith from "lodash.mergewith";
+import path from "path";
 
 /**
  * Converts an array of globs to full paths

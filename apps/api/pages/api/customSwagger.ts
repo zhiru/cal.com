@@ -76,9 +76,15 @@ export function createSwaggerSpec({
     ...swaggerOptions,
     definition,
   };
-  const spec = build(options);
 
-  return spec;
+  try {
+    const spec = build(options);
+    return spec;
+  } catch (error) {
+    console.error(error);
+  }
+
+  return null;
 }
 
 /**

@@ -1,6 +1,8 @@
 import { type NextApiRequest, type NextApiResponse } from "next";
 import { join } from "path";
-import swaggerJsdoc, { type OAS3Definition, type Options } from "swagger-jsdoc";
+import { type OAS3Definition, type Options } from "swagger-jsdoc";
+
+import { build } from "./specification";
 
 export type SwaggerOptions = Options & {
   apiFolder?: string;
@@ -74,7 +76,7 @@ export function createSwaggerSpec({
     ...swaggerOptions,
     definition,
   };
-  const spec = swaggerJsdoc(options);
+  const spec = build(options);
 
   return spec;
 }

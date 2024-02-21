@@ -8,7 +8,7 @@ import path from "path";
  * @param {array} globs - Array of globs and/or normal paths
  * @return {array} Array of fully-qualified paths
  */
-function convertGlobPaths(globs) {
+function convertGlobPaths(globs: array) {
   return globs
     .map((globString) => glob.sync(globString))
     .reduce((previous, current) => previous.concat(current), []);
@@ -19,7 +19,7 @@ function convertGlobPaths(globs) {
  * @param {object} obj - the object to check
  * @returns {boolean}
  */
-function hasEmptyProperty(obj) {
+function hasEmptyProperty(obj: object) {
   return Object.keys(obj)
     .map((key) => obj[key])
     .every(
@@ -33,7 +33,7 @@ function hasEmptyProperty(obj) {
  * @param {object} jsDocComment - Single item of JSDoc comments from doctrine.parse
  * @returns {array} YAML parts
  */
-function extractYamlFromJsDoc(jsDocComment) {
+function extractYamlFromJsDoc(jsDocComment: object) {
   const yamlParts = [];
 
   for (const tag of jsDocComment.tags) {
@@ -49,7 +49,7 @@ function extractYamlFromJsDoc(jsDocComment) {
  * @param {string} filePath
  * @returns {{jsdoc: array, yaml: array}} JSDoc comments and Yaml files
  */
-function extractAnnotations(filePath, encoding = "utf8") {
+function extractAnnotations(filePath: string, encoding = "utf8") {
   const fileContent = fs.readFileSync(filePath, { encoding });
   const ext = path.extname(filePath);
   const jsDocRegex = /\/\*\*([\s\S]*?)\*\//gm;
@@ -91,7 +91,7 @@ function extractAnnotations(filePath, encoding = "utf8") {
  * @param {array} tags
  * @returns {boolean}
  */
-function isTagPresentInTags(tag, tags) {
+function isTagPresentInTags(tag: object, tags: array) {
   const match = tags.find((targetTag) => tag.name === targetTag.name);
   if (match) return true;
 
@@ -103,7 +103,7 @@ function isTagPresentInTags(tag, tags) {
  * @param {string} defPath
  * @param {object} swaggerDefinition
  */
-function loadDefinition(defPath, swaggerDefinition) {
+function loadDefinition(defPath: string, swaggerDefinition: object) {
   const resolvedPath = path.resolve(defPath);
   const extName = path.extname(resolvedPath);
 
@@ -136,7 +136,7 @@ function loadDefinition(defPath, swaggerDefinition) {
  * @param {object} first the first object to get merged
  * @param {object} second the second object to get merged
  */
-function mergeDeep(first, second) {
+function mergeDeep(first: object, second: object) {
   return mergeWith({}, first, second, (a, b) => (b === null ? a : undefined));
 }
 

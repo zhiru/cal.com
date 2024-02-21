@@ -17,7 +17,7 @@ import {
  * @param {object} definition - The `definition` or `swaggerDefinition` from options.
  * @returns {object} swaggerObject
  */
-function prepare(definition) {
+function prepare(definition: object) {
   console.log("---------------------prepare");
   const swaggerObject = JSON.parse(JSON.stringify(definition));
   const specificationTemplate = {
@@ -58,7 +58,7 @@ function prepare(definition) {
  * @param {object} obj
  * @param {string} ext
  */
-function format(swaggerObject, ext) {
+function format(swaggerObject: object, ext: string) {
   if (ext === ".yml" || ext === ".yaml") {
     return YAML.stringify(swaggerObject);
   }

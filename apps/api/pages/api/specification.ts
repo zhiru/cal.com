@@ -71,7 +71,7 @@ function format(swaggerObject: object, ext: string) {
  * @param {object} swaggerObject
  * @returns {object} swaggerObject
  */
-function clean(swaggerObject) {
+function clean(swaggerObject: object) {
   for (const prop of ["definitions", "responses", "parameters", "securityDefinitions"]) {
     if (hasEmptyProperty(swaggerObject[prop])) {
       delete swaggerObject[prop];
@@ -87,7 +87,7 @@ function clean(swaggerObject) {
  * @param {object} swaggerObject - Swagger object from parsing the api files.
  * @returns {object} The specification.
  */
-function finalize(swaggerObject, options) {
+function finalize(swaggerObject: object, options: object) {
   let specification = swaggerObject;
   parser.parse(swaggerObject, (err, api) => {
     if (!err) {
@@ -107,7 +107,7 @@ function finalize(swaggerObject, options) {
  * @param {object} annotation
  * @param {string} property
  */
-function organize(swaggerObject, annotation, property) {
+function organize(swaggerObject: object, annotation: object, property: string) {
   // Root property on purpose.
   // @see https://github.com/OAI/OpenAPI-Specification/blob/master/proposals/002_Webhooks.md#proposed-solution
   if (property === "x-webhooks") {
@@ -160,7 +160,7 @@ function organize(swaggerObject, annotation, property) {
  * @param {object} options
  * @returns {object} swaggerObject
  */
-function build(options) {
+function build(options: object) {
   YAML.defaultOptions.keepCstNodes = true;
 
   // Get input definition and prepare the specification's skeleton

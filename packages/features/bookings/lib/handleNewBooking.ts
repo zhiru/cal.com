@@ -63,6 +63,7 @@ import { getBookerBaseUrl } from "@calcom/lib/getBookerUrl/server";
 import getPaymentAppData from "@calcom/lib/getPaymentAppData";
 import { getTeamIdFromEventType } from "@calcom/lib/getTeamIdFromEventType";
 import { HttpError } from "@calcom/lib/http-error";
+import { checkIdempotencyKey, storeIdempotencyKey } from "@calcom/lib/idempotency";
 import isOutOfBounds, { BookingDateInPastError } from "@calcom/lib/isOutOfBounds";
 import logger from "@calcom/lib/logger";
 import { handlePayment } from "@calcom/lib/payment/handlePayment";
@@ -572,6 +573,7 @@ async function createBooking({
   bookerEmail,
   paymentAppData,
   changedOrganizer,
+  idempotencyKey,
 }: {
   originalRescheduledBooking: OriginalRescheduledBooking;
   evt: CalendarEvent;
@@ -593,7 +595,14 @@ async function createBooking({
   bookerEmail: Awaited<ReturnType<typeof getBookingData>>["email"];
   paymentAppData: ReturnType<typeof getPaymentAppData>;
   changedOrganizer: boolean;
+  idempotencyKey: string;
 }) {
+  const bookingExists = await checkIdempotencyKey(idempotencyKey);
+  if (bookingExists) {
+    log.error(`Meeting is being booked with a duplicate idempotencyKey: ${idempotencyKey}`);
+    throw new Error("idempotency_key_duplicate");
+  }
+
   if (originalRescheduledBooking) {
     evt.title = originalRescheduledBooking?.title || evt.title;
     evt.description = originalRescheduledBooking?.description || evt.description;
@@ -727,6 +736,7 @@ async function createBooking({
       },
     });
   }
+  await storeIdempotencyKey(idempotencyKey, JSON.stringify(newBookingData));
 
   return prisma.booking.create(createBookingObj);
 }
@@ -898,6 +908,7 @@ async function handler(
   bookingDataSchemaGetter: BookingDataSchemaGetter = getBookingDataSchema
 ) {
   const { userId } = req;
+  const idempotencyKey = req.headers["idempotency-key"] as string;
 
   // handle dynamic user
   let eventType =
@@ -1646,6 +1657,7 @@ async function handler(
       bookerEmail,
       paymentAppData,
       changedOrganizer,
+      idempotencyKey,
     });
 
     // @NOTE: Add specific try catch for all subsequent async calls to avoid error

@@ -23,10 +23,13 @@ export async function get<T>(path: string, config?: RequestInit): Promise<T> {
 
 export async function post<T, U>(path: string, body: T, config?: RequestInit): Promise<U> {
   const init = {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
     ...config,
+    method: "POST",
+    headers: {
+      ...config?.headers,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   };
   return await http<U>(path, init);
 }

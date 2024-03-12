@@ -25,4 +25,4 @@ RUN yarn workspace @calcom/api-v2 run build
 
 EXPOSE 80
 
-CMD [ "yarn", "workspace", "@calcom/api-v2", "start:prod"]
+CMD [ "yarn", "workspace", "@calcom/api-v2", "start"]

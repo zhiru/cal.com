@@ -1,6 +1,4 @@
-import type { User as UserAuth } from "next-auth";
-import { signOut, useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
@@ -17,8 +15,6 @@ import {
   OrgUpgradeBanner,
   type OrgUpgradeBannerProps,
 } from "@calcom/features/ee/organizations/components/OrgUpgradeBanner";
-import { getOrgFullOrigin } from "@calcom/features/ee/organizations/lib/orgDomains";
-import HelpMenuItem from "@calcom/features/ee/support/components/HelpMenuItem";
 import { TeamsUpgradeBanner, type TeamsUpgradeBannerProps } from "@calcom/features/ee/teams/components";
 import { useFlagMap } from "@calcom/features/flags/context/provider";
 import { KBarContent, KBarRoot, KBarTrigger } from "@calcom/features/kbar/Kbar";
@@ -38,19 +34,9 @@ import VerifyEmailBanner, {
   type VerifyEmailBannerProps,
 } from "@calcom/features/users/components/VerifyEmailBanner";
 import classNames from "@calcom/lib/classNames";
-import {
-  APP_NAME,
-  DESKTOP_APP_LINK,
-  JOIN_DISCORD,
-  ROADMAP,
-  WEBAPP_URL,
-  IS_VISUAL_REGRESSION_TESTING,
-  TOP_BANNER_HEIGHT,
-  ENABLE_PROFILE_SWITCHER,
-} from "@calcom/lib/constants";
+import { APP_NAME, WEBAPP_URL, TOP_BANNER_HEIGHT, ENABLE_PROFILE_SWITCHER } from "@calcom/lib/constants";
 import { useFormbricks } from "@calcom/lib/formbricks-client";
 import getBrandColours from "@calcom/lib/getBrandColours";
-import { useBookerUrl } from "@calcom/lib/hooks/useBookerUrl";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import useTheme from "@calcom/lib/hooks/useTheme";
 import { isKeyInObject } from "@calcom/lib/isKeyInObject";
@@ -62,19 +48,15 @@ import type { SVGComponent } from "@calcom/types/SVGComponent";
 import {
   Avatar,
   Button,
-  ButtonOrLink,
-  Credits,
   Dropdown,
   DropdownItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   ErrorBoundary,
   HeadSeo,
   Logo,
-  showToast,
   SkeletonText,
   Tooltip,
   useCalcomTheme,
@@ -86,33 +68,19 @@ import {
   Calendar,
   ChevronDown,
   Clock,
-  Copy,
-  Download,
-  ExternalLink,
   FileText,
   Grid,
-  HelpCircle,
   Link as LinkIcon,
-  LogOut,
-  Map,
-  Moon,
   MoreHorizontal,
   Settings,
-  User as UserIcon,
   Users,
   Zap,
   Check,
 } from "@calcom/ui/components/icon";
-import { Discord } from "@calcom/ui/components/icon/Discord";
 
-import { useOrgBranding } from "../ee/organizations/context/provider";
-import FreshChatProvider from "../ee/support/lib/freshchat/FreshChatProvider";
+import { SideBarContainer } from "./Sidebar";
 import { TeamInviteBadge } from "./TeamInviteBadge";
-
-// need to import without ssr to prevent hydration errors
-const Tips = dynamic(() => import("@calcom/features/tips").then((mod) => mod.Tips), {
-  ssr: false,
-});
+import { UserDropdown } from "./UserDropdown";
 
 /* TODO: Migate this */
 
@@ -383,199 +351,6 @@ export default function Shell(props: LayoutProps) {
     </KBarWrapper>
   ) : (
     <PublicShell {...props} />
-  );
-}
-
-interface UserDropdownProps {
-  small?: boolean;
-}
-
-function UserDropdown({ small }: UserDropdownProps) {
-  const { t } = useLocale();
-  const { data: user } = useMeQuery();
-  const utils = trpc.useContext();
-  const bookerUrl = useBookerUrl();
-
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    const Beacon = window.Beacon;
-    // window.Beacon is defined when user actually opens up HelpScout and username is available here. On every re-render update session info, so that it is always latest.
-    Beacon &&
-      Beacon("session-data", {
-        username: user?.username || "Unknown",
-        screenResolution: `${screen.width}x${screen.height}`,
-      });
-  });
-  const mutation = trpc.viewer.away.useMutation({
-    onMutate: async ({ away }) => {
-      await utils.viewer.me.cancel();
-
-      const previousValue = utils.viewer.me.getData();
-
-      if (previousValue) {
-        utils.viewer.me.setData(undefined, { ...previousValue, away });
-      }
-
-      return { previousValue };
-    },
-    onError: (_, __, context) => {
-      if (context?.previousValue) {
-        utils.viewer.me.setData(undefined, context.previousValue);
-      }
-
-      showToast(t("toggle_away_error"), "error");
-    },
-    onSettled() {
-      utils.viewer.me.invalidate();
-    },
-  });
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const onHelpItemSelect = () => {
-    setHelpOpen(false);
-    setMenuOpen(false);
-  };
-
-  // Prevent rendering dropdown if user isn't available.
-  // We don't want to show nameless user.
-  if (!user) {
-    return null;
-  }
-
-  return (
-    <Dropdown open={menuOpen}>
-      <DropdownMenuTrigger asChild onClick={() => setMenuOpen((menuOpen) => !menuOpen)}>
-        <button
-          data-testid="user-dropdown-trigger-button"
-          className={classNames(
-            "hover:bg-emphasis todesktop:!bg-transparent group mx-0 flex w-full cursor-pointer appearance-none items-center rounded-full text-left outline-none transition focus:outline-none focus:ring-0 md:rounded-none lg:rounded",
-            small ? "p-2" : "px-2 py-1.5"
-          )}>
-          <span
-            className={classNames(
-              small ? "h-4 w-4" : "h-5 w-5 ltr:mr-2 rtl:ml-2",
-              "relative flex-shrink-0 rounded-full "
-            )}>
-            <Avatar
-              size={small ? "xs" : "xsm"}
-              imageSrc={`${user.avatarUrl || user.avatar}`}
-              alt={user.username || "Nameless User"}
-              className="overflow-hidden"
-            />
-            <span
-              className={classNames(
-                "border-muted absolute -bottom-1 -right-1 rounded-full border bg-green-500",
-                user.away ? "bg-yellow-500" : "bg-green-500",
-                small ? "-bottom-0.5 -right-0.5 h-2.5 w-2.5" : "-bottom-0.5 -right-0 h-2 w-2"
-              )}
-            />
-          </span>
-          {!small && (
-            <span className="flex flex-grow items-center gap-2">
-              <span className="w-24 flex-shrink-0 text-sm leading-none">
-                <span className="text-emphasis block truncate font-medium">
-                  {user.name || "Nameless User"}
-                </span>
-              </span>
-              <ChevronDown
-                className="group-hover:text-subtle text-muted h-4 w-4 flex-shrink-0 rtl:mr-4"
-                aria-hidden="true"
-              />
-            </span>
-          )}
-        </button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuPortal>
-        <FreshChatProvider>
-          <DropdownMenuContent
-            align="start"
-            onInteractOutside={() => {
-              setMenuOpen(false);
-              setHelpOpen(false);
-            }}
-            className="group overflow-hidden rounded-md">
-            {helpOpen ? (
-              <HelpMenuItem onHelpItemSelect={() => onHelpItemSelect()} />
-            ) : (
-              <>
-                <DropdownMenuItem>
-                  <DropdownItem
-                    type="button"
-                    StartIcon={(props) => (
-                      <UserIcon className={classNames("text-default", props.className)} aria-hidden="true" />
-                    )}
-                    href="/settings/my-account/profile">
-                    {t("my_profile")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <DropdownItem
-                    type="button"
-                    StartIcon={(props) => (
-                      <Settings className={classNames("text-default", props.className)} aria-hidden="true" />
-                    )}
-                    href="/settings/my-account/general">
-                    {t("my_settings")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <DropdownItem
-                    type="button"
-                    StartIcon={(props) => (
-                      <Moon className={classNames("text-default", props.className)} aria-hidden="true" />
-                    )}
-                    href="/settings/my-account/out-of-office">
-                    {t("out_of_office")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <DropdownItem
-                    StartIcon={() => <Discord className="text-default h-4 w-4" />}
-                    target="_blank"
-                    rel="noreferrer"
-                    href={JOIN_DISCORD}>
-                    {t("join_our_discord")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <DropdownItem StartIcon={Map} target="_blank" href={ROADMAP}>
-                    {t("visit_roadmap")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <DropdownItem
-                    type="button"
-                    StartIcon={(props) => <HelpCircle aria-hidden="true" {...props} />}
-                    onClick={() => setHelpOpen(true)}>
-                    {t("help")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="todesktop:hidden hidden lg:flex">
-                  <DropdownItem StartIcon={Download} target="_blank" rel="noreferrer" href={DESKTOP_APP_LINK}>
-                    {t("download_desktop_app")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem>
-                  <DropdownItem
-                    type="button"
-                    StartIcon={(props) => <LogOut aria-hidden="true" {...props} />}
-                    onClick={() => signOut({ callbackUrl: "/auth/logout" })}>
-                    {t("sign_out")}
-                  </DropdownItem>
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </FreshChatProvider>
-      </DropdownMenuPortal>
-    </Dropdown>
   );
 }
 
@@ -864,165 +639,6 @@ const MobileNavigationMoreItem: React.FC<{
     </li>
   );
 };
-
-type SideBarContainerProps = {
-  bannersHeight: number;
-};
-
-type SideBarProps = {
-  bannersHeight: number;
-  user?: UserAuth | null;
-};
-
-function SideBarContainer({ bannersHeight }: SideBarContainerProps) {
-  const { status, data } = useSession();
-
-  // Make sure that Sidebar is rendered optimistically so that a refresh of pages when logged in have SideBar from the beginning.
-  // This improves the experience of refresh on app store pages(when logged in) which are SSG.
-  // Though when logged out, app store pages would temporarily show SideBar until session status is confirmed.
-  if (status !== "loading" && status !== "authenticated") return null;
-  return <SideBar bannersHeight={bannersHeight} user={data?.user} />;
-}
-
-function SideBar({ bannersHeight, user }: SideBarProps) {
-  const { t, isLocaleReady } = useLocale();
-  const orgBranding = useOrgBranding();
-
-  const publicPageUrl = useMemo(() => {
-    if (!user?.org?.id) return `${process.env.NEXT_PUBLIC_WEBSITE_URL}/${user?.username}`;
-    const publicPageUrl = orgBranding?.slug ? getOrgFullOrigin(orgBranding.slug) : "";
-    return publicPageUrl;
-  }, [orgBranding?.slug, user?.username, user?.org?.id]);
-
-  const bottomNavItems: NavigationItemType[] = [
-    {
-      name: "view_public_page",
-      href: publicPageUrl,
-      icon: ExternalLink,
-      target: "__blank",
-    },
-    {
-      name: "copy_public_page_link",
-      href: "",
-      onClick: (e: { preventDefault: () => void }) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(publicPageUrl);
-        showToast(t("link_copied"), "success");
-      },
-      icon: Copy,
-    },
-    {
-      name: "settings",
-      href: user?.org ? `/settings/organizations/profile` : "/settings/my-account/profile",
-      icon: Settings,
-    },
-  ];
-  return (
-    <div className="relative">
-      <aside
-        style={{ maxHeight: `calc(100vh - ${bannersHeight}px)`, top: `${bannersHeight}px` }}
-        className="todesktop:!bg-transparent bg-muted border-muted fixed left-0 hidden h-full max-h-screen w-14 flex-col overflow-y-auto overflow-x-hidden border-r md:sticky md:flex lg:w-56 lg:px-3">
-        <div className="flex h-full flex-col justify-between py-3 lg:pt-4">
-          <header className="todesktop:-mt-3 todesktop:flex-col-reverse todesktop:[-webkit-app-region:drag] items-center justify-between md:hidden lg:flex">
-            {orgBranding ? (
-              !ENABLE_PROFILE_SWITCHER ? (
-                <Link href="/settings/organizations/profile" className="w-full px-1.5">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Avatar
-                      alt={`${orgBranding.name} logo`}
-                      imageSrc={`${orgBranding.fullDomain}/org/${orgBranding.slug}/avatar.png`}
-                      size="xsm"
-                    />
-                    <p className="text line-clamp-1 text-sm">
-                      <span>{orgBranding.name}</span>
-                    </p>
-                  </div>
-                </Link>
-              ) : (
-                <ProfileDropdown />
-              )
-            ) : (
-              <div data-testid="user-dropdown-trigger" className="todesktop:mt-4 w-full">
-                <span className="hidden lg:inline">
-                  <UserDropdown />
-                </span>
-                <span className="hidden md:inline lg:hidden">
-                  <UserDropdown small />
-                </span>
-              </div>
-            )}
-            <div className="flex justify-end rtl:space-x-reverse">
-              <button
-                color="minimal"
-                onClick={() => window.history.back()}
-                className="todesktop:block hover:text-emphasis text-subtle group hidden text-sm font-medium">
-                <ArrowLeft className="group-hover:text-emphasis text-subtle h-4 w-4 flex-shrink-0" />
-              </button>
-              <button
-                color="minimal"
-                onClick={() => window.history.forward()}
-                className="todesktop:block hover:text-emphasis text-subtle group hidden text-sm font-medium">
-                <ArrowRight className="group-hover:text-emphasis text-subtle h-4 w-4 flex-shrink-0" />
-              </button>
-              {!!orgBranding && (
-                <div data-testid="user-dropdown-trigger" className="flex items-center">
-                  <UserDropdown small />
-                </div>
-              )}
-              <KBarTrigger />
-            </div>
-          </header>
-
-          {/* logo icon for tablet */}
-          <Link href="/event-types" className="text-center md:inline lg:hidden">
-            <Logo small icon />
-          </Link>
-
-          <Navigation />
-        </div>
-
-        <div>
-          <Tips />
-          {bottomNavItems.map(({ icon: Icon, ...item }, index) => (
-            <Tooltip side="right" content={t(item.name)} className="lg:hidden" key={item.name}>
-              <ButtonOrLink
-                id={item.name}
-                href={item.href || undefined}
-                aria-label={t(item.name)}
-                target={item.target}
-                className={classNames(
-                  "text-left",
-                  "[&[aria-current='page']]:bg-emphasis text-default justify-right group flex items-center rounded-md px-2 py-1.5 text-sm font-medium transition",
-                  "[&[aria-current='page']]:text-emphasis mt-0.5 w-full text-sm",
-                  isLocaleReady ? "hover:bg-emphasis hover:text-emphasis" : "",
-                  index === 0 && "mt-3"
-                )}
-                onClick={item.onClick}>
-                {!!Icon && (
-                  <Icon
-                    className={classNames(
-                      "h-4 w-4 flex-shrink-0 [&[aria-current='page']]:text-inherit",
-                      "me-3 md:mx-auto lg:ltr:mr-2 lg:rtl:ml-2"
-                    )}
-                    aria-hidden="true"
-                  />
-                )}
-                {isLocaleReady ? (
-                  <span className="hidden w-full justify-between lg:flex">
-                    <div className="flex">{t(item.name)}</div>
-                  </span>
-                ) : (
-                  <SkeletonText className="h-[20px] w-full" />
-                )}
-              </ButtonOrLink>
-            </Tooltip>
-          ))}
-          {!IS_VISUAL_REGRESSION_TESTING && <Credits />}
-        </div>
-      </aside>
-    </div>
-  );
-}
 
 export function ShellMain(props: LayoutProps) {
   const router = useRouter();

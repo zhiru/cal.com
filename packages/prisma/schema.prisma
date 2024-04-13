@@ -563,9 +563,6 @@ model Booking {
   iCalUID               String?              @default("")
   iCalSequence          Int                  @default(0)
   instantMeetingToken   InstantMeetingToken?
-  rating                Int?
-  ratingFeedback        String?
-  noShowHost            Boolean?
 
   @@index([eventTypeId])
   @@index([userId])
@@ -1017,7 +1014,6 @@ enum WorkflowTemplates {
   CANCELLED
   RESCHEDULED
   COMPLETED
-  RATING
 }
 
 enum WorkflowMethods {

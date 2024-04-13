@@ -6,6 +6,8 @@ const safeGet = async <T = unknown>(key: string): Promise<T | undefined> => {
     return get<T>(key);
   } catch (error) {
     // Don't crash if EDGE_CONFIG env var is missing
+    // TODO: Remove - Adding just for testing in a preview environment
+    console.error(error);
   }
 };
 

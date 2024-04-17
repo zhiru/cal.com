@@ -728,6 +728,7 @@ export const getNextMonthNotStartingOnWeekStart = (weekStart: WeekDays, from?: D
 export function getMockedCredential({
   metadataLookupKey,
   key,
+  credentialData,
 }: {
   metadataLookupKey: string;
   key: {
@@ -737,6 +738,7 @@ export function getMockedCredential({
     refresh_token?: string;
     scope: string;
   };
+  credentialData?: Record<string, any>;
 }) {
   const app = appStoreMetadata[metadataLookupKey as keyof typeof appStoreMetadata];
   return {
@@ -750,16 +752,19 @@ export function getMockedCredential({
       refresh_token: "REFRESH_TOKEN",
       ...key,
     },
+    invalid: false,
+    ...credentialData,
   };
 }
 
-export function getGoogleCalendarCredential() {
+export function getGoogleCalendarCredential(credentialData?: Record<string, any>) {
   return getMockedCredential({
     metadataLookupKey: "googlecalendar",
     key: {
       scope:
         "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly",
     },
+    credentialData,
   });
 }
 

@@ -1,5 +1,5 @@
 import type { DestinationCalendar } from "@prisma/client";
-import { describe, it } from "vitest";
+import { describe, it, expect } from "vitest";
 
 import type { CredentialPayload } from "@calcom/types/Credential";
 import {
@@ -42,7 +42,14 @@ describe("EventManager tests", () => {
 
       const eventManager = new EventManager({ ...organizer, destinationCalendar, credentials });
 
-      console.log("Test");
+      // Ensure that credentials are being correctly sorted
+      expect(eventManager.calendarCredentials).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: googleCalendarCredential.type })])
+      );
+      expect(eventManager.videoCredentials).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: "daily_video" })])
+      );
+      // TODO: Add case for CRM apps
     });
   });
 });

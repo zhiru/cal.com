@@ -77,3 +77,4 @@ export { createNewUsersConnectToOrgIfExists };
 export { getAllUserBookings };
 export { getBookingInfo };
 export { handleCancelBooking };
+export * as EmailManager from "@calcom/emails";

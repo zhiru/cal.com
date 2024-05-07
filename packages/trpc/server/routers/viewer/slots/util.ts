@@ -30,7 +30,7 @@ import { TRPCError } from "@trpc/server";
 
 import type { GetScheduleOptions } from "./getSchedule.handler";
 import type { TGetScheduleInputSchema } from "./getSchedule.schema";
-import { handleNotificationWhenNoSlots } from "./handleNotificationWhenNoSlots";
+import { scheduleHandleNotificationWhenNoSlots as handleNotificationWhenNoSlots } from "./scheduleHandleNotificationWhenNoSlots";
 
 export const checkIfIsAvailable = ({
   time,

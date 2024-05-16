@@ -59,14 +59,19 @@ expect.extend({
       !schedule.slots[`${dateString}`]
         .map((slot) => slot.time)
         .every((actualSlotTime, index) => {
-          return `${dateString}T${expectedSlots[index]}` === actualSlotTime;
+          let expectedSlot = expectedSlots[index];
+          expectedSlot = expectedSlot?.includes("T") ? expectedSlot : `${dateString}T${expectedSlot}`;
+          return expectedSlot === actualSlotTime;
         })
     ) {
       return {
         pass: false,
         message: () =>
           `has incorrect timeslots for ${dateString}.\n\r ${diff(
-            expectedSlots.map((expectedSlot) => `${dateString}T${expectedSlot}`),
+            expectedSlots.map((expectedSlot) => {
+              expectedSlot = expectedSlot.includes("T") ? expectedSlot : `${dateString}T${expectedSlot}`;
+              return expectedSlot;
+            }),
             schedule.slots[`${dateString}`].map((slot) => slot.time)
           )}`,
       };

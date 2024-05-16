@@ -165,6 +165,7 @@ type InputBooking = Partial<Omit<Booking, keyof WhiteListedBookingProps>> & Whit
 export const Timezones = {
   "+5:30": "Asia/Kolkata",
   "+6:00": "Asia/Dhaka",
+  "-11:00": "Pacific/Pago_Pago",
 };
 
 async function addHostsToDb(eventTypes: InputEventType[]) {

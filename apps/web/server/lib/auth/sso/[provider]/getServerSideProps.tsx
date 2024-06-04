@@ -1,7 +1,7 @@
 import type { GetServerSidePropsContext } from "next";
 
 import { getPremiumMonthlyPlanPriceId } from "@calcom/app-store/stripepayment/lib/utils";
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { orgDomainConfig } from "@calcom/features/ee/organizations/lib/orgDomains";
 import stripe from "@calcom/features/ee/payments/server/stripe";
 import { hostedCal, isSAMLLoginEnabled, samlProductID, samlTenantID } from "@calcom/features/ee/sso/lib/saml";
@@ -25,9 +25,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
     throw new Error(`File is not named sso/[provider]`);
   }
 
-  const { req } = context;
-
-  const session = await getServerSession({ req });
+  const session = await auth(context);
   const ssr = await ssrInit(context);
   const { currentOrgDomain } = orgDomainConfig(context.req);
 

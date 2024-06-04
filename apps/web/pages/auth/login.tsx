@@ -160,6 +160,7 @@ inferSSRProps<typeof getServerSideProps> & WithNonceProps<{}>) {
   };
 
   const { data, isPending, error } = trpc.viewer.public.ssoConnections.useQuery();
+  console.log(data, isPending);
 
   useEffect(
     function refactorMeWithoutEffect() {
@@ -170,9 +171,7 @@ inferSSRProps<typeof getServerSideProps> & WithNonceProps<{}>) {
     [error]
   );
 
-  const displaySSOLogin = HOSTED_CAL_FEATURES
-    ? true
-    : isSAMLLoginEnabled && !isPending && data?.connectionExists;
+  const displaySSOLogin = HOSTED_CAL_FEATURES ? true : true; // isSAMLLoginEnabled && !isPending && data?.connectionExists;
 
   return (
     <div className="dark:bg-brand dark:text-brand-contrast text-emphasis min-h-screen [--cal-brand-emphasis:#101010] [--cal-brand-subtle:#9CA3AF] [--cal-brand-text:white] [--cal-brand:#111827] dark:[--cal-brand-emphasis:#e1e1e1] dark:[--cal-brand-text:black] dark:[--cal-brand:white]">

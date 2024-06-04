@@ -82,7 +82,7 @@ export const createContext = async (
   { req, res }: CreateContextOptions,
   sessionGetter?: GetSessionFn
 ): Promise<Context> => {
-  const locale = await getLocale(req);
+  const locale = await getLocale(req.headers);
 
   // This type may not be accurate if this request is coming from SSG init but they both should satisfy the requirements of getIP.
   // TODO: @sean - figure out a way to make getIP be happy with trpc req. params

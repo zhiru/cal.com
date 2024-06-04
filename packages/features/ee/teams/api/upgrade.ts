@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { z } from "zod";
 
 import { getRequestedSlugError } from "@calcom/app-store/stripepayment/lib/team-billing";
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import stripe from "@calcom/features/ee/payments/server/stripe";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { HttpError } from "@calcom/lib/http-error";
@@ -83,8 +83,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!metadata.success) throw new HttpError({ statusCode: 400, message: "Invalid team metadata" });
   }
 
-  const session = await getServerSession({ req, res });
-
+  const session = await auth(req, res);
   if (!session) return { message: "Team upgraded successfully" };
 
   const redirectUrl = team?.isOrganization

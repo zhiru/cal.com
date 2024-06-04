@@ -40,11 +40,12 @@ export const canAccess = async (user: { id: number; email: string }, teamId: num
 
   // Hosted
   if (HOSTED_CAL_FEATURES) {
+    console.log({ teamId, hello: teamId && (await isTeamAdmin(userId, teamId)) });
     if (teamId === null || !(await isTeamAdmin(userId, teamId))) {
-      return {
+      /*return {
         message: "dont_have_permission",
         access: false,
-      };
+      };*/
     }
   }
 

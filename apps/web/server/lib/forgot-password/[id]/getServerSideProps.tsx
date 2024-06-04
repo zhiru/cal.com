@@ -25,12 +25,12 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   } catch (e) {
     resetPasswordRequest = null;
   }
-  const locale = await getLocale(context.req);
+  const locale = await getLocale(context.req.headers);
   return {
     props: {
       isRequestExpired: !resetPasswordRequest,
       requestId: id,
-      csrfToken: await getCsrfToken({ req: context.req }),
+      csrfToken: await getCsrfToken(),
       ...(await serverSideTranslations(locale, ["common"])),
     },
   };

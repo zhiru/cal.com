@@ -5,7 +5,7 @@ import type { GetServerSidePropsContext } from "next";
 import { getAppWithMetadata } from "@calcom/app-store/_appRegistry";
 import RoutingFormsRoutingConfig from "@calcom/app-store/routing-forms/pages/app-routing.config";
 import TypeformRoutingConfig from "@calcom/app-store/typeform/pages/app-routing.config";
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { useParamsWithFallback } from "@calcom/lib/hooks/useParamsWithFallback";
 import prisma from "@calcom/prisma";
 import type { AppGetServerSideProps } from "@calcom/types/AppGetServerSideProps";
@@ -131,7 +131,7 @@ export async function getServerSideProps(
     // appPages is actually hardcoded here and no matter the fileName the same variable would be used.
     // We can write some validation logic later on that ensures that [...appPages].tsx file exists
     params.appPages = pages.slice(1);
-    const session = await getServerSession({ req, res });
+    const session = await auth(req, res);
     const user = session?.user;
     const app = await getAppWithMetadata({ slug: appName });
     if (!app) {

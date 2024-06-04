@@ -5,7 +5,6 @@ import { encode } from "next-auth/jwt";
 import type { Provider } from "next-auth/providers";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
-import GoogleProvider from "next-auth/providers/google";
 
 import checkLicense from "@calcom/features/ee/common/server/checkLicense";
 import createUsersAndConnectToOrg from "@calcom/features/ee/dsync/lib/users/createUsersAndConnectToOrg";
@@ -38,7 +37,7 @@ const GOOGLE_API_CREDENTIALS = process.env.GOOGLE_API_CREDENTIALS || "{}";
 const { client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET } =
   JSON.parse(GOOGLE_API_CREDENTIALS)?.web || {};
 const GOOGLE_LOGIN_ENABLED = process.env.GOOGLE_LOGIN_ENABLED === "true";
-const IS_GOOGLE_LOGIN_ENABLED = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_LOGIN_ENABLED);
+const IS_GOOGLE_LOGIN_ENABLED = false; // !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_LOGIN_ENABLED);
 const ORGANIZATIONS_AUTOLINK =
   process.env.ORGANIZATIONS_AUTOLINK === "1" || process.env.ORGANIZATIONS_AUTOLINK === "true";
 
@@ -241,7 +240,7 @@ const providers: Provider[] = [
   ImpersonationProvider,
 ];
 
-if (IS_GOOGLE_LOGIN_ENABLED) {
+/*if (IS_GOOGLE_LOGIN_ENABLED) {
   providers.push(
     GoogleProvider({
       clientId: GOOGLE_CLIENT_ID,
@@ -249,7 +248,7 @@ if (IS_GOOGLE_LOGIN_ENABLED) {
       allowDangerousEmailAccountLinking: true,
     })
   );
-}
+}*/
 
 if (isSAMLLoginEnabled) {
   providers.push({

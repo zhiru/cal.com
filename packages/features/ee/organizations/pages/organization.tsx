@@ -1,6 +1,6 @@
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { getFeatureFlag } from "@calcom/features/flags/server/utils";
 import { MembershipRole } from "@calcom/prisma/client";
 
@@ -15,7 +15,7 @@ export const getServerSideProps = async ({ req, res }: GetServerSidePropsContext
   }
 
   // Check if logged in user has an organization assigned
-  const session = await getServerSession({ req, res });
+  const session = await auth(req, res);
 
   if (!session?.user.profile.organizationId) {
     return {

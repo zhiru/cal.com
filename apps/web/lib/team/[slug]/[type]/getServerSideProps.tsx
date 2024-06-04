@@ -1,7 +1,7 @@
 import type { GetServerSidePropsContext } from "next";
 import { z } from "zod";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { getBookingForReschedule } from "@calcom/features/bookings/lib/get-booking";
 import type { GetBookingType } from "@calcom/features/bookings/lib/get-booking";
 import { getSlugOrRequestedSlug } from "@calcom/features/ee/organizations/lib/orgDomains";
@@ -21,7 +21,7 @@ const paramsSchema = z.object({
 // 1. Check if team exists, to show 404
 // 2. If rescheduling, get the booking details
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const session = await getServerSession(context);
+  const session = await auth(context);
   const { slug: teamSlug, type: meetingSlug } = paramsSchema.parse(context.params);
   const { rescheduleUid, duration: queryDuration, isInstantMeeting: queryIsInstantMeeting } = context.query;
   const { ssrInit } = await import("@server/lib/ssr");

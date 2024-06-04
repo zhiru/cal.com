@@ -1,6 +1,6 @@
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { getDeploymentKey } from "@calcom/features/ee/deployment/lib/getDeploymentKey";
 import prisma from "@calcom/prisma";
 import { UserPermissionRole } from "@calcom/prisma/enums";
@@ -8,12 +8,10 @@ import { UserPermissionRole } from "@calcom/prisma/enums";
 import { ssrInit } from "@server/lib/ssr";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const { req } = context;
-
   const ssr = await ssrInit(context);
   const userCount = await prisma.user.count();
 
-  const session = await getServerSession({ req });
+  const session = await auth(context);
 
   if (session?.user.role && session?.user.role !== UserPermissionRole.ADMIN) {
     return {

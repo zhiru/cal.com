@@ -1,7 +1,7 @@
 import MarkdownIt from "markdown-it";
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { getCalVideoReference } from "@calcom/features/get-cal-video-reference";
 import { UserRepository } from "@calcom/lib/server/repository/user";
 import prisma, { bookingMinimalSelect } from "@calcom/prisma";
@@ -101,7 +101,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     endTime: booking.endTime.toString(),
   });
 
-  const session = await getServerSession({ req });
+  const session = await auth(context);
 
   // set meetingPassword to null for guests
   if (session?.user.id !== bookingObj.user?.id) {

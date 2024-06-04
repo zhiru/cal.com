@@ -1,7 +1,7 @@
 import { dir } from "i18next";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import React from "react";
 
 import { getLocale } from "@calcom/features/auth/lib/getLocale";
@@ -35,8 +35,7 @@ const getInitialProps = async (url: string) => {
   const isEmbed = pathname.endsWith("/embed") || (searchParams?.get("embedType") ?? null) !== null;
   const embedColorScheme = searchParams?.get("ui.color-scheme");
 
-  const req = { headers: headers(), cookies: cookies() };
-  const newLocale = await getLocale(req);
+  const newLocale = await getLocale(headers());
   const direction = dir(newLocale);
 
   return { isEmbed, embedColorScheme, locale: newLocale, direction };

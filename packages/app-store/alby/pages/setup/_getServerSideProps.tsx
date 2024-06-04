@@ -1,18 +1,17 @@
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import prisma from "@calcom/prisma";
 
 import { getAlbyKeys } from "../../lib/getAlbyKeys";
 import type { IAlbySetupProps } from "./index";
 
-export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const notFound = { notFound: true } as const;
 
-  if (typeof ctx.params?.slug !== "string") return notFound;
+  if (typeof context.params?.slug !== "string") return notFound;
 
-  const { req, res } = ctx;
-  const session = await getServerSession({ req, res });
+  const session = await auth(context);
 
   if (!session?.user?.id) {
     const redirect = { redirect: { permanent: false, destination: "/auth/login" } } as const;

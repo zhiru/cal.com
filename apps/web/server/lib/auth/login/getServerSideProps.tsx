@@ -2,7 +2,7 @@ import { jwtVerify } from "jose";
 import type { GetServerSidePropsContext } from "next";
 import { getCsrfToken } from "next-auth/react";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import { isSAMLLoginEnabled, samlProductID, samlTenantID } from "@calcom/features/ee/sso/lib/saml";
 import { WEBSITE_URL } from "@calcom/lib/constants";
 import { getSafeRedirectUrl } from "@calcom/lib/getSafeRedirectUrl";
@@ -12,9 +12,9 @@ import { IS_GOOGLE_LOGIN_ENABLED } from "@server/lib/constants";
 import { ssrInit } from "@server/lib/ssr";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const { req, res, query } = context;
+  const { query } = context;
 
-  const session = await getServerSession({ req, res });
+  const session = await auth(context);
   const ssr = await ssrInit(context);
 
   const verifyJwt = (jwt: string) => {

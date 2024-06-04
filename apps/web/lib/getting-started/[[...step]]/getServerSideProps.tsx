@@ -1,17 +1,14 @@
 import type { GetServerSidePropsContext } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
+import { auth } from "@calcom/features/auth";
 import { getLocale } from "@calcom/features/auth/lib/getLocale";
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import prisma from "@calcom/prisma";
 
 import { ssrInit } from "@server/lib/ssr";
 
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const { req } = context;
-
-  const session = await getServerSession({ req });
-
+  const session = await auth(context);
   if (!session?.user?.id) {
     return { redirect: { permanent: false, destination: "/auth/login" } };
   }
@@ -48,7 +45,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
   if (user.completedOnboarding) {
     return { redirect: { permanent: false, destination: "/event-types" } };
   }
-  const locale = await getLocale(context.req);
+  const locale = session.locale || (await getLocale(context.req.headers));
   return {
     props: {
       ...(await serverSideTranslations(locale, ["common"])),

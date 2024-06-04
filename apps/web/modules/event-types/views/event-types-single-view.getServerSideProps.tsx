@@ -1,6 +1,6 @@
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 
@@ -12,9 +12,9 @@ import { ssrInit } from "@server/lib/ssr";
 export type PageProps = inferSSRProps<typeof getServerSideProps>;
 
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const { req, res, query } = context;
+  const { query } = context;
 
-  const session = await getServerSession({ req, res });
+  const session = await auth(context);
 
   const typeParam = parseInt(asStringOrThrow(query.type));
   const ssr = await ssrInit(context);

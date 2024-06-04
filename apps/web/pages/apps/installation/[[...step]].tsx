@@ -10,8 +10,8 @@ import { z } from "zod";
 import checkForMultiplePaymentApps from "@calcom/app-store/_utils/payments/checkForMultiplePaymentApps";
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
 import type { EventTypeAppSettingsComponentProps, EventTypeModel } from "@calcom/app-store/types";
+import { auth } from "@calcom/features/auth";
 import { getLocale } from "@calcom/features/auth/lib/getLocale";
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import { AppOnboardingSteps } from "@calcom/lib/apps/appOnboardingSteps";
 import { getAppOnboardingRedirectUrl } from "@calcom/lib/apps/getAppOnboardingRedirectUrl";
 import { getAppOnboardingUrl } from "@calcom/lib/apps/getAppOnboardingUrl";
@@ -407,14 +407,14 @@ const getAppInstallsBySlug = async (appSlug: string, userId: number, teamIds?: n
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   try {
     let eventTypes: TEventType[] | null = null;
-    const { req, res, query, params } = context;
+    const { query, params } = context;
     const stepsEnum = z.enum(STEPS);
     const parsedAppSlug = z.coerce.string().parse(query?.slug);
     const parsedStepParam = z.coerce.string().parse(params?.step);
     const parsedTeamIdParam = z.coerce.number().optional().parse(query?.teamId);
     const _ = stepsEnum.parse(parsedStepParam);
-    const session = await getServerSession({ req, res });
-    const locale = await getLocale(context.req);
+    const session = await auth(context);
+    const locale = session.locale || (await getLocale(context.req.headers));
     const app = await getAppBySlug(parsedAppSlug);
     const appMetadata = appStoreMetadata[app.dirName as keyof typeof appStoreMetadata];
     const hasEventTypes = appMetadata?.extendsFeature === "EventType";

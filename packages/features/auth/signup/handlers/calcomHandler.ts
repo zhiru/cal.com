@@ -142,7 +142,9 @@ async function handler(req: RequestWithUsernameStatus, res: NextApiResponse) {
             organizationSettings: true,
           },
         },
-        organizationSettings: true,
+        organizationSettings: {
+          select: {},
+        },
       },
     });
     if (team) {
@@ -207,7 +209,7 @@ async function handler(req: RequestWithUsernameStatus, res: NextApiResponse) {
     }
     sendEmailVerification({
       email,
-      language: await getLocaleFromRequest(req),
+      language: await getLocaleFromRequest(req.headers),
       username: username || "",
     });
     // Sync Services

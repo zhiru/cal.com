@@ -1,13 +1,12 @@
 import type { GetServerSidePropsContext } from "next";
 
-import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { auth } from "@calcom/features/auth";
 
 import { ssrInit } from "@server/lib/ssr";
 
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const ssr = await ssrInit(context);
-  const session = await getServerSession({ req: context.req, res: context.res });
-
+  const session = await auth(context);
   if (!session) {
     return {
       redirect: {

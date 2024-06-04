@@ -98,7 +98,7 @@ const middleware = async (req: NextRequest): Promise<NextResponse<unknown>> => {
 
   requestHeaders.set("x-pathname", url.pathname);
 
-  const locale = await getLocale(req);
+  const locale = await getLocale(requestHeaders);
 
   requestHeaders.set("x-locale", locale);
 

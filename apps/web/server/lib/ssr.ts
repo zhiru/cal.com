@@ -56,7 +56,7 @@ const routerSlice = router({
  */
 export async function ssrInit(context: GetServerSidePropsContext, options?: { noI18nPreload: boolean }) {
   const ctx = await createContext(context);
-  const locale = await getLocale(context.req);
+  const locale = await getLocale(context.req.headers);
   const i18n = await serverSideTranslations(locale, ["common", "vital"]);
 
   const ssr = createServerSideHelpers({

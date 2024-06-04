@@ -1,4 +1,3 @@
-import type { IncomingMessage } from "http";
 import { dir } from "i18next";
 import type { NextPageContext } from "next";
 import type { DocumentContext, DocumentProps } from "next/document";
@@ -33,7 +32,7 @@ class MyDocument extends Document<Props> {
     const newLocale =
       ctx.req && getLocaleModule
         ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await getLocaleModule.getLocale(ctx.req as IncomingMessage & { cookies: Record<string, any> })
+          await getLocaleModule.getLocale(ctx.req.headers)
         : "en";
 
     const asPath = ctx.asPath || "";

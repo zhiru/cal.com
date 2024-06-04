@@ -1,4 +1,3 @@
-import type { IncomingMessage } from "http";
 import type { AppContextType } from "next/dist/shared/lib/utils";
 import React from "react";
 
@@ -28,8 +27,7 @@ MyApp.getInitialProps = async (ctx: AppContextType) => {
 
   if (req) {
     const { getLocale } = await import("@calcom/features/auth/lib/getLocale");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newLocale = await getLocale(req as IncomingMessage & { cookies: Record<string, any> });
+    newLocale = await getLocale(req.headers);
   } else if (typeof window !== "undefined" && window.calNewLocale) {
     newLocale = window.calNewLocale;
   }

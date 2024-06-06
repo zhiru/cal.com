@@ -1,10 +1,11 @@
 import type { Membership, Team, UserPermissionRole } from "@prisma/client";
-import type { AuthOptions, Session } from "next-auth";
+import type { NextAuthConfig, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { encode } from "next-auth/jwt";
 import type { Provider } from "next-auth/providers";
 import CredentialsProvider from "next-auth/providers/credentials";
-import EmailProvider from "next-auth/providers/email";
+import Google from "next-auth/providers/google";
+import Email from "next-auth/providers/nodemailer";
 
 import checkLicense from "@calcom/features/ee/common/server/checkLicense";
 import createUsersAndConnectToOrg from "@calcom/features/ee/dsync/lib/users/createUsersAndConnectToOrg";
@@ -240,15 +241,15 @@ const providers: Provider[] = [
   ImpersonationProvider,
 ];
 
-/*if (IS_GOOGLE_LOGIN_ENABLED) {
+if (IS_GOOGLE_LOGIN_ENABLED) {
   providers.push(
-    GoogleProvider({
+    Google({
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     })
   );
-}*/
+}
 
 if (isSAMLLoginEnabled) {
   providers.push({
@@ -382,8 +383,8 @@ if (isSAMLLoginEnabled) {
 }
 
 providers.push(
-  EmailProvider({
-    type: "email",
+  Email({
+    server: { host: "localhost", port: 25, auth: { user: "", pass: "" } },
     maxAge: 10 * 60 * 60, // Magic links are valid for 10 min only
     // Here we setup the sendVerificationRequest that calls the email template with the identifier (email) and token to verify.
     sendVerificationRequest: async (props) => (await import("./sendVerificationRequest")).default(props),
@@ -406,7 +407,7 @@ const mapIdentityProvider = (providerName: string) => {
   }
 };
 
-export const AUTH_OPTIONS: AuthOptions = {
+export const AUTH_OPTIONS: NextAuthConfig = {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   adapter: calcomAdapter,
@@ -416,7 +417,7 @@ export const AUTH_OPTIONS: AuthOptions = {
   jwt: {
     // decorate the native JWT encode function
     // Impl. detail: We don't pass through as this function is called with encode/decode functions.
-    encode: async ({ token, maxAge, secret }) => {
+    encode: async ({ token, maxAge, secret, salt }) => {
       if (token?.sub && isNumber(token.sub)) {
         const user = await prisma.user.findFirst({
           where: { id: Number(token.sub) },
@@ -430,7 +431,7 @@ export const AUTH_OPTIONS: AuthOptions = {
           }
         }
       }
-      return encode({ secret, token, maxAge });
+      return encode({ secret, token, maxAge, salt });
     },
   },
   cookies: defaultCookies(WEBAPP_URL?.startsWith("https://")),
@@ -630,7 +631,7 @@ export const AUTH_OPTIONS: AuthOptions = {
         hasValidLicense,
         user: {
           ...session.user,
-          id: token.id as number,
+          id: token.id,
           name: token.name,
           username: token.username as string,
           role: token.role as UserPermissionRole,
@@ -787,7 +788,11 @@ export const AUTH_OPTIONS: AuthOptions = {
             },
           },
           include: {
-            password: true,
+            password: {
+              select: {
+                hash: true,
+              },
+            },
           },
         });
 

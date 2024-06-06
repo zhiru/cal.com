@@ -144,7 +144,8 @@ inferSSRProps<typeof getServerSideProps> & WithNonceProps<{}>) {
   const onSubmit = async (values: LoginValues) => {
     setErrorMessage(null);
     telemetry.event(telemetryEventTypes.login, collectPageParameters());
-    const res = await signIn<"credentials">("credentials", {
+    console.log(callbackUrl);
+    const res = await signIn("credentials", {
       ...values,
       callbackUrl,
       redirect: false,
@@ -191,9 +192,6 @@ inferSSRProps<typeof getServerSideProps> & WithNonceProps<{}>) {
         }>
         <FormProvider {...methods}>
           <form onSubmit={methods.handleSubmit(onSubmit)} noValidate data-testid="login-form">
-            <div>
-              <input defaultValue={csrfToken || undefined} type="hidden" hidden {...register("csrfToken")} />
-            </div>
             <div className="space-y-6">
               <div className={classNames("space-y-6", { hidden: twoFactorRequired })}>
                 <EmailField

@@ -1,7 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import type { NextApiRequest } from "next";
 
+import { HttpError } from "@calcom/lib/http-error";
 import { defaultResponder } from "@calcom/lib/server";
+import { OrganizationRepository } from "@calcom/lib/server/repository/organization";
 import prisma from "@calcom/prisma";
 
 import { withMiddleware } from "~/lib/helpers/withMiddleware";
@@ -46,11 +48,18 @@ export async function getHandler(req: NextApiRequest) {
   const {
     userId,
     isSystemWideAdmin,
+    isOrganizationOwnerOrAdmin,
     pagination: { take, skip },
   } = req;
-  const where: Prisma.UserWhereInput = {};
+  let where: Prisma.UserWhereInput = {};
   // If user is not ADMIN, return only his data.
-  if (!isSystemWideAdmin) where.id = userId;
+  if (!isSystemWideAdmin || !isOrganizationOwnerOrAdmin) where.id = userId;
+
+  if (isOrganizationOwnerOrAdmin) {
+    const org = await OrganizationRepository.getUserOrganization({ userId });
+    if (!org) throw new HttpError({ message: "Organization not found", statusCode: 404 });
+    where = { ...where, teams: { some: { teamId: org.id } } };
+  }
 
   if (req.query.email) {
     const validationResult = schemaQuerySingleOrMultipleUserEmails.parse(req.query);

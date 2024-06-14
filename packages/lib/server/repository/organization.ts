@@ -158,4 +158,17 @@ export class OrganizationRepository {
       },
     });
   }
+
+  static async getUserOrganization({ userId }: { userId: number }) {
+    return await prisma.team.findFirst({
+      where: {
+        isOrganization: true,
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+    });
+  }
 }

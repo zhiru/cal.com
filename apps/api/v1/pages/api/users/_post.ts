@@ -88,7 +88,13 @@ import { schemaUserCreateBodyParams } from "~/lib/validations/user";
  *        description: Authorization information is missing or invalid.
  */
 async function postHandler(req: NextApiRequest) {
-  const { isSystemWideAdmin } = req;
+  const { isSystemWideAdmin, isOrganizationOwnerOrAdmin } = req;
+  if (isOrganizationOwnerOrAdmin)
+    throw new HttpError({
+      statusCode: 405,
+      message: "Please use POST /invites to add members to your organization",
+    });
+
   // If user is not ADMIN, return unauthorized.
   if (!isSystemWideAdmin) throw new HttpError({ statusCode: 401, message: "You are not authorized" });
   const data = await schemaUserCreateBodyParams.parseAsync(req.body);

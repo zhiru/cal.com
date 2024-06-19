@@ -9,7 +9,7 @@ import { localStorage } from "@calcom/lib/webstorage";
 const is24hLocalstorageKey = "timeOption.is24hClock";
 
 export enum TimeFormat {
-  TWELVE_HOUR = "h:mma",
+  TWELVE_HOUR = "h:mm a",
   TWENTY_FOUR_HOUR = "HH:mm",
 }
 

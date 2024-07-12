@@ -71,6 +71,7 @@ import { BookingStatus, SchedulingType, WebhookTriggerEvents } from "@calcom/pri
 import { credentialForCalendarServiceSelect } from "@calcom/prisma/selects/credential";
 import type { bookingCreateSchemaLegacyPropsForApi } from "@calcom/prisma/zod-utils";
 import { userMetadata as userMetadataSchema } from "@calcom/prisma/zod-utils";
+import { TinybirdClient } from "@calcom/tinybird";
 import {
   deleteAllWorkflowReminders,
   getAllWorkflowsFromEventType,
@@ -1061,6 +1062,14 @@ async function handler(
       bookerEmail,
       paymentAppData,
       changedOrganizer,
+    });
+
+    await TinybirdClient.recordCreatedBooking({
+      id: booking.id,
+      userId: booking.userId,
+      eventTypeId: booking.eventTypeId,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
     });
 
     // @NOTE: Add specific try catch for all subsequent async calls to avoid error

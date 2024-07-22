@@ -28,18 +28,18 @@ runs:
         path: ${{ inputs.path }}
         key: ${{ runner.os }}-${{ env.cache-name }}-${{ inputs.path }}-${{ env.key-1 }}-${{ env.key-2 }}-${{ env.key-3 }}-${{ env.key-4 }}
     - run: echo ${{ env.E2E_TEST_CALCOM_QA_GCAL_CREDENTIALS }} && yarn db-seed
-      if: steps.cache-db.outputs.cache-hit != 'true'
+      #if: steps.cache-db.outputs.cache-hit != 'true'
       shell: bash
-    - name: Postgres Dump Backup
-      if: steps.cache-db.outputs.cache-hit != 'true'
-      uses: tj-actions/pg-dump@v2.3
-      with:
-        database_url: ${{ inputs.DATABASE_URL }}
-        path: ${{ inputs.path }}
-        options: "-O"
-    - name: Postgres Backup Restore
-      if: steps.cache-db.outputs.cache-hit == 'true'
-      uses: tj-actions/pg-restore@v4.5
-      with:
-        database_url: ${{ inputs.DATABASE_URL }}
-        backup_file: ${{ inputs.path }}
+    # - name: Postgres Dump Backup
+    #   if: steps.cache-db.outputs.cache-hit != 'true'
+    #   uses: tj-actions/pg-dump@v2.3
+    #   with:
+    #     database_url: ${{ inputs.DATABASE_URL }}
+    #     path: ${{ inputs.path }}
+    #     options: "-O"
+    # - name: Postgres Backup Restore
+    #   if: steps.cache-db.outputs.cache-hit == 'true'
+    #   uses: tj-actions/pg-restore@v4.5
+    #   with:
+    #     database_url: ${{ inputs.DATABASE_URL }}
+    #     backup_file: ${{ inputs.path }}

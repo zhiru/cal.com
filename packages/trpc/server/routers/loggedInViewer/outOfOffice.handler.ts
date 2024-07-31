@@ -186,7 +186,7 @@ export const outOfOfficeCreate = async ({ ctx, input }: TBookingRedirect) => {
         language: t,
         fromEmail: ctx.user.email,
         toEmail: userToNotify.email,
-        toName: ctx.user.username || "",
+        toName: ctx.user.name || ctx.user.username || "",
         dates: `${formattedStartDate} - ${formattedEndDate}`,
       });
     }

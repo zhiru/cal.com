@@ -387,8 +387,8 @@ export const Components: Record<FieldType, Component> = {
   radioInput: {
     propsType: propsTypes.radioInput,
     factory: function RadioInputWithLabel({
-      label,
       name,
+      label,
       options,
       optionsInputs,
       value,
@@ -406,17 +406,17 @@ export const Components: Record<FieldType, Component> = {
 
       const { t } = useLocale();
 
-      const getCleanLabel = (option: { label: string; value: string }): string | JSX.Element => {
-        if (!option.label) {
+      const getCleanLabel = (label: string): string | JSX.Element => {
+        if (!label) {
           return "";
         }
 
-        return option.label.search(/^https?:\/\//) !== -1 ? (
-          <a href={option.label} target="_blank">
-            <span className="underline">{option.label}</span>
+        return label.search(/^https?:\/\//) !== -1 ? (
+          <a href={label} target="_blank">
+            <span className="underline">{label}</span>
           </a>
         ) : (
-          option.label
+          label
         );
       };
 
@@ -442,7 +442,9 @@ export const Components: Record<FieldType, Component> = {
                         }}
                         checked={value?.value === option.value}
                       />
-                      <span className="text-emphasis me-2 ms-2 text-sm">{getCleanLabel(option) ?? ""}</span>
+                      <span className="text-emphasis me-2 ms-2 text-sm">
+                        {getCleanLabel(option.label) ?? ""}
+                      </span>
                       <span>
                         {option.value === "phone" && (
                           <InfoBadge content={t("number_in_international_format")} />
@@ -455,7 +457,7 @@ export const Components: Record<FieldType, Component> = {
                 // Show option itself as label because there is just one option
                 <>
                   <Label className="flex">
-                    {label || options[0].label}
+                    {getCleanLabel(label)}
                     {!readOnly && optionsInputs[options[0].value]?.required ? (
                       <span className="text-default mb-1 ml-1 text-sm font-medium">*</span>
                     ) : null}

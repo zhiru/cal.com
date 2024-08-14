@@ -23,7 +23,7 @@ import { getAbsoluteEventTypeRedirectUrl } from "../../getEventTypeRedirectUrl";
 import getFieldIdentifier from "../../lib/getFieldIdentifier";
 import { processRoute } from "../../lib/processRoute";
 import { substituteVariables } from "../../lib/substituteVariables";
-import transformResponse from "../../lib/transformResponse";
+import transformFieldResponse from "../../lib/transformResponse";
 import type { NonRouterRoute, Response } from "../../types/types";
 import { getServerSideProps } from "./getServerSideProps";
 
@@ -276,7 +276,7 @@ const usePrefilledResponse = (form: Props["form"]) => {
     const value = valuesFromQuery.length > 1 ? valuesFromQuery : valuesFromQuery[0];
 
     prefillResponse[field.id] = {
-      value: transformResponse({ field, value }),
+      value: transformFieldResponse({ field, value }),
       label: field.label,
     };
   });

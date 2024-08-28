@@ -463,6 +463,14 @@ checksums:
     dynamic_booking: 927c71b4f3ba40240b664d7c9a1c8efd
     allow_seo_indexing: 421a6a2100fd741cbffa8764f5e0e72d
     seo_indexing: 8d91183c10c7e4b56e0208acecb79d21
+    allow_browser_notifications: cbe4e1677d717c5330816389fe2e6b28
+    you_have_denied_notifications: 6693a68b32a3baa592bc5b6063ec3c89
+    disable_browser_notifications: 16740fdd3fed13b0344fecd83c2bec4d
+    browser_notifications_turned_on: 20488a8e52be8be6c377c7666a15d8fb
+    browser_notifications_turned_off: f9ff8b96ea57c00e90d761af4f3494c3
+    browser_notifications_denied: 82aae055de0e798655fa07f96d426717
+    please_allow_notifications: 1ff79d465b45be45108352f8422cdb84
+    browser_notifications_not_supported: 3cdb7e333c9bfcf703047d66deab825e
     email: e7f34943a0c2fb849db1839ff6ef5cb5
     email_placeholder: 06962d9f03dcdbd4fa1b876f240054e8
     full_name: f45991923345e8322c9ff8cd6b7e2b16
@@ -848,6 +856,7 @@ checksums:
     disable_notes: 26e3eaffcd889bf9d62be546080b3eaa
     disable_notes_description: d778488f6709a75addc93c0eee488764
     requires_confirmation_description: 8e79eadfbbbafbf2963da3fbcb9122f1
+    requires_confirmation_will_block_slot_description: 07d2ec2d2ad1123b833f63f6d675cd3d
     recurring_event: 64081e2a29e23cfc8eb421a44565da0c
     recurring_event_description: 6652c7b8ad3562c04d4ace180a96bf09
     cannot_be_used_with_paid_event_types: c655cde68dd549884259b0b0fc93a888
@@ -959,6 +968,7 @@ checksums:
     signin_with_google: f84b1b8574fb23734c002b401cad49e2
     signin_with_saml: 932c77d607b1fa394c53aedf4259ecf8
     signin_with_saml_oidc: 3d9ec37d3e09a530398f25a77dc27070
+    last_used: 79c1790ff1f8cf956c06f93699704b4d
     you_will_need_to_generate: deaaf4d09d215932679faf27827222c1
     import: 348b8ab981de5b7f1fca6d7302263bbd
     import_from: 1b70c493a1f9dfe82be2702af4977905
@@ -2455,7 +2465,7 @@ checksums:
     create_account_password_hint: 19792dcd3a8958a1374a9837f7383b39
     disconnect_account: c2d44bcc79bee8dc002bd937329eb5ac
     disconnect_account_hint: edf4b2a1c881878660a7bd814e17c795
-    cookie_consent_checkbox: b38fab80d85cbee397b6eeaa328014ff
+    cookie_consent_checkbox: ee39ccd2aa5cb939444a74e525893b23
     make_a_call: 809ec7bb27e3b20c082999b9f7ab0c00
     skip_rr_assignment_label: 26980bd2315d3d2cfb7ba6e6364d88dc
     skip_rr_description: d402731f4a64fecb15438b2c80cba7b3

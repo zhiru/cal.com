@@ -31,14 +31,12 @@ import {
   ImageUploader,
   Label,
   LinkIconButton,
-  Meta,
   showToast,
   SkeletonContainer,
   SkeletonText,
   TextField,
 } from "@calcom/ui";
 
-import { getLayout } from "../../../../settings/layouts/SettingsLayout";
 import { subdomainSuffix } from "../../../organizations/lib/orgDomains";
 
 const regex = new RegExp("^[a-zA-Z0-9-]*$");
@@ -170,7 +168,6 @@ const OtherTeamProfileView = () => {
 
   return (
     <>
-      <Meta title={t("profile")} description={t("profile_team_description")} />
       {!isPending ? (
         <>
           {isAdmin ? (
@@ -368,7 +365,5 @@ const OtherTeamProfileView = () => {
     </>
   );
 };
-
-OtherTeamProfileView.getLayout = getLayout;
 
 export default OtherTeamProfileView;

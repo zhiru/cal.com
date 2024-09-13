@@ -169,7 +169,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
     const parsedStepParam = z.coerce.string().parse(params?.step);
     const parsedTeamIdParam = z.coerce.number().optional().parse(query?.teamId);
     const _ = stepsEnum.parse(parsedStepParam);
-    const session = await getServerSession({ req });
+    const session = await getServerSession();
     const locale = await getLocale(context.req);
     const app = await getAppBySlug(parsedAppSlug);
     const appMetadata = appStoreMetadata[app.dirName as keyof typeof appStoreMetadata];

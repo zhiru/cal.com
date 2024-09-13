@@ -407,12 +407,7 @@ const mapIdentityProvider = (providerName: string) => {
   }
 };
 
-export const getOptions = ({
-  getDclid,
-}: {
-  /** so we can extract the Dub cookie in both pages and app routers */
-  getDclid: () => string | undefined;
-}): AuthOptions => ({
+export const getOptions = (): AuthOptions => ({
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   adapter: calcomAdapter,
@@ -948,7 +943,7 @@ export const getOptions = ({
       // we should use NextAuth's isNewUser flag instead: https://next-auth.js.org/configuration/events#signin
       const isNewUser = new Date(user.createdAt) > new Date(Date.now() - 10 * 60 * 1000);
       if ((isENVDev || IS_CALCOM) && process.env.DUB_API_KEY && isNewUser) {
-        const dclid = getDclid();
+        const dclid = headers().get("dclid");
         // check if there's a dclid cookie set by @dub/analytics
         if (dclid) {
           // here we use waitUntil – meaning this code will run async to not block the main thread

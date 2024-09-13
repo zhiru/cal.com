@@ -23,7 +23,7 @@ const paramsSchema = z.object({
 // 1. Check if team exists, to show 404
 // 2. If rescheduling, get the booking details
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const session = await getServerSession(context);
+  const session = await getServerSession();
   const { slug: teamSlug, type: meetingSlug } = paramsSchema.parse(context.params);
   const {
     rescheduleUid,

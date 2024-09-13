@@ -10,7 +10,7 @@ import { ssrInit } from "@server/lib/ssr";
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const { req } = context;
 
-  const session = await getServerSession({ req });
+  const session = await getServerSession();
 
   if (!session?.user?.id) {
     return { redirect: { permanent: false, destination: "/auth/login" } };

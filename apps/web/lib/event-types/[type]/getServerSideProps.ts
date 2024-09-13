@@ -14,7 +14,7 @@ export type PageProps = inferSSRProps<typeof getServerSideProps>;
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const { req, query } = context;
 
-  const session = await getServerSession({ req });
+  const session = await getServerSession();
 
   const typeParam = parseInt(asStringOrThrow(query.type));
   const ssr = await ssrInit(context);

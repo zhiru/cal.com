@@ -10,7 +10,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
 
   const ssr = await ssrInit(context);
 
-  const session = await getServerSession({ req });
+  const session = await getServerSession();
 
   let appStore;
   if (session?.user?.id) {

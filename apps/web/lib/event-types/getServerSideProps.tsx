@@ -7,7 +7,7 @@ import { ssrInit } from "@server/lib/ssr";
 
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const ssr = await ssrInit(context);
-  const session = await getServerSession({ req: context.req });
+  const session = await getServerSession();
 
   if (!session) {
     return {

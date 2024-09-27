@@ -12,7 +12,7 @@ import { closeComUpsertTeamUser } from "@calcom/lib/sync/SyncServiceManager";
 import { validateAndGetCorrectedUsernameAndEmail } from "@calcom/lib/validateUsername";
 import prisma from "@calcom/prisma";
 import { IdentityProvider } from "@calcom/prisma/enums";
-import { signupSchema } from "@calcom/prisma/zod-utils";
+import { emailSignupSchema } from "@calcom/prisma/zod-utils";
 
 import { joinAnyChildTeamOnOrgInvite } from "../utils/organization";
 import { prefillAvatar } from "../utils/prefillAvatar";
@@ -24,7 +24,7 @@ import {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const data = req.body;
-  const { email, password, language, token } = signupSchema.parse(data);
+  const { email, password, language, token } = emailSignupSchema.parse(data);
 
   const username = slugify(data.username);
   const userEmail = email.toLowerCase();

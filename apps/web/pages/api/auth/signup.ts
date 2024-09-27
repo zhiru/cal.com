@@ -9,10 +9,10 @@ import getIP from "@calcom/lib/getIP";
 import { HttpError } from "@calcom/lib/http-error";
 import logger from "@calcom/lib/logger";
 import { checkCfTurnstileToken } from "@calcom/lib/server/checkCfTurnstileToken";
-import { signupSchema } from "@calcom/prisma/zod-utils";
+import { emailSignupSchema } from "@calcom/prisma/zod-utils";
 
 async function ensureSignupIsEnabled(req: RequestWithUsernameStatus) {
-  const { token } = signupSchema
+  const { token } = emailSignupSchema
     .pick({
       token: true,
     })

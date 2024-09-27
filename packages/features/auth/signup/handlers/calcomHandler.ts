@@ -16,7 +16,7 @@ import { closeComUpsertTeamUser } from "@calcom/lib/sync/SyncServiceManager";
 import { validateAndGetCorrectedUsernameAndEmail } from "@calcom/lib/validateUsername";
 import { prisma } from "@calcom/prisma";
 import { IdentityProvider } from "@calcom/prisma/enums";
-import { signupSchema } from "@calcom/prisma/zod-utils";
+import { emailSignupSchema } from "@calcom/prisma/zod-utils";
 
 import { joinAnyChildTeamOnOrgInvite } from "../utils/organization";
 import {
@@ -32,7 +32,7 @@ async function handler(req: RequestWithUsernameStatus, res: NextApiResponse) {
     email: _email,
     password,
     token,
-  } = signupSchema
+  } = emailSignupSchema
     .pick({
       email: true,
       password: true,

@@ -37,7 +37,7 @@ import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { useDebounce } from "@calcom/lib/hooks/useDebounce";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { collectPageParameters, telemetryEventTypes, useTelemetry } from "@calcom/lib/telemetry";
-import { signupSchema as apiSignupSchema } from "@calcom/prisma/zod-utils";
+import { emailSignupSchema as apiSignupSchema, samlSignupSchema } from "@calcom/prisma/zod-utils";
 import type { inferSSRProps } from "@calcom/types/inferSSRProps";
 import {
   Button,
@@ -53,14 +53,15 @@ import {
 
 import type { getServerSideProps } from "@lib/signup/getServerSideProps";
 
-const signupSchema = apiSignupSchema.extend({
-  apiError: z.string().optional(), // Needed to display API errors doesnt get passed to the API
+const emailSignupSchema = apiSignupSchema.extend({
+  apiError: z.string().optional(), // Needed to display API errors that do not get passed to the API
   cfToken: z.string().optional(),
 });
 
 const TurnstileCaptcha = dynamic(() => import("@components/auth/Turnstile"), { ssr: false });
 
-type FormValues = z.infer<typeof signupSchema>;
+type EmailSignupFormValues = z.infer<typeof emailSignupSchema>;
+type SAMLSignupFormValues = z.infer<typeof samlSignupSchema>;
 
 export type SignupProps = inferSSRProps<typeof getServerSideProps>;
 
@@ -106,7 +107,7 @@ function UsernameField({
   setUsernameTaken: (value: boolean) => void;
 }) {
   const { t } = useLocale();
-  const { register, formState } = useFormContext<FormValues>();
+  const { register, formState } = useFormContext<EmailSignupFormValues>();
   const debouncedUsername = useDebounce(username, 600);
 
   useEffect(() => {
@@ -189,16 +190,22 @@ export default function Signup({
   const telemetry = useTelemetry();
   const { t, i18n } = useLocale();
   const router = useRouter();
-  const formMethods = useForm<FormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: prepopulateFormValues satisfies FormValues,
+  const emailFormMethods = useForm<EmailSignupFormValues>({
+    resolver: zodResolver(emailSignupSchema),
+    defaultValues: prepopulateFormValues satisfies EmailSignupFormValues,
     mode: "onChange",
   });
+  const samlFormMethods = useForm<SAMLSignupFormValues>({
+    resolver: zodResolver(emailSignupSchema),
+    defaultValues: prepopulateFormValues satisfies SAMLSignupFormValues,
+    mode: "onChange",
+  });
+
   const {
     register,
     watch,
     formState: { isSubmitting, errors, isSubmitSuccessful },
-  } = formMethods;
+  } = emailFormMethods;
 
   useEffect(() => {
     if (redirectUrl) {
@@ -235,7 +242,7 @@ export default function Signup({
 
   const isPlatformUser = redirectUrl?.includes("platform") && redirectUrl?.includes("new");
 
-  const signUp: SubmitHandler<FormValues> = async (_data) => {
+  const signUp: SubmitHandler<EmailSignupFormValues> = async (_data) => {
     const { cfToken, ...data } = _data;
     await fetch("/api/auth/signup", {
       body: JSON.stringify({

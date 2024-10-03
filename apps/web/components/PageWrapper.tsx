@@ -6,6 +6,7 @@ import Script from "next/script";
 
 import "@calcom/embed-core/src/embed-iframe";
 import LicenseRequired from "@calcom/features/ee/common/components/LicenseRequired";
+import { TwitterPixelScript } from "@calcom/features/ee/event-tracking/lib/twitter/twitterPixel";
 import { IS_CALCOM, WEBAPP_URL } from "@calcom/lib/constants";
 import { buildCanonical } from "@calcom/lib/next-seo.config";
 import { IconSprites } from "@calcom/ui";
@@ -79,6 +80,7 @@ function PageWrapper(props: AppProps) {
         id="page-status"
         dangerouslySetInnerHTML={{ __html: `window.CalComPageStatus = '${pageStatus}'` }}
       />
+      <TwitterPixelScript />
 
       <style jsx global>{`
         :root {

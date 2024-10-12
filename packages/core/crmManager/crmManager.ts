@@ -72,4 +72,11 @@ export default class CrmManager {
     const createdContacts = (await crmService?.createContacts(contactsToCreate, organizerEmail)) || [];
     return createdContacts;
   }
+
+  public async getAccountOwnerAndUsers(email: string) {
+    const crmService = await this.getCrmService(this.credential);
+    const data = await crmService.getAccountOwnerAndUsers(email);
+
+    return data;
+  }
 }

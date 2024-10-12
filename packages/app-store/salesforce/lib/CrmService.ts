@@ -10,7 +10,8 @@ import logger from "@calcom/lib/logger";
 import { prisma } from "@calcom/prisma";
 import type { CalendarEvent } from "@calcom/types/Calendar";
 import type { CredentialPayload } from "@calcom/types/Credential";
-import type { CRM, Contact, CrmEvent } from "@calcom/types/CrmService";
+import { CRM } from "@calcom/types/CrmService";
+import type { Contact, CrmEvent } from "@calcom/types/CrmService";
 
 import getAppKeysFromSlug from "../../_utils/getAppKeysFromSlug";
 import type { ParseRefreshTokenResponse } from "../../_utils/oauth/parseRefreshTokenResponse";
@@ -51,7 +52,7 @@ const salesforceTokenSchema = z.object({
   token_type: z.string(),
 });
 
-export default class SalesforceCRMService implements CRM {
+export default class SalesforceCRMService extends CRM {
   private integrationName = "";
   private conn: Promise<jsforce.Connection>;
   private log: typeof logger;
@@ -309,6 +310,7 @@ export default class SalesforceCRMService implements CRM {
     } else {
       soql = `SELECT Id, Email, OwnerId FROM ${recordToSearch} WHERE Email IN ('${emailArray.join("','")}')`;
     }
+
     const results = await conn.query(soql);
 
     if (!results || !results.records.length) return [];
@@ -499,5 +501,9 @@ export default class SalesforceCRMService implements CRM {
       ...(organizerId && { OwnerId: organizerId }),
       ...(recordType === SalesforceRecordEnum.LEAD && { Company: company }),
     };
+  }
+
+  async getAccountOwnerAndUsers(email: string) {
+    return `This was hit with email ${email}`;
   }
 }

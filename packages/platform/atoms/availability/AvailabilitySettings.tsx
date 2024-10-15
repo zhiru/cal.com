@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import type { SetStateAction, Dispatch } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import dayjs from "@calcom/dayjs";
@@ -14,7 +15,6 @@ import { availabilityAsString } from "@calcom/lib/availability";
 import classNames from "@calcom/lib/classNames";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { sortAvailabilityStrings } from "@calcom/lib/weekstart";
-import { trpc } from "@calcom/trpc";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import type { TimeRange, WorkingHours } from "@calcom/types/schedule";
 import {
@@ -32,7 +32,6 @@ import {
   TimezoneSelect as WebTimezoneSelect,
   Tooltip,
   VerticalDivider,
-  showToast,
 } from "@calcom/ui";
 import { Icon } from "@calcom/ui";
 
@@ -97,6 +96,12 @@ type AvailabilitySettingsProps = {
   customClassNames?: CustomClassNames;
   disableEditableHeading?: boolean;
   enableOverrides?: boolean;
+  bulkUpdateModalProps?: {
+    isOpen: boolean;
+    setIsOpen: Dispatch<SetStateAction<boolean>>;
+    save: ({ eventTypeIds }: { eventTypeIds: number[] }) => void;
+    isSaving: boolean;
+  };
 };
 
 const DeleteDialogButton = ({
@@ -246,20 +251,10 @@ export function AvailabilitySettings({
   customClassNames,
   disableEditableHeading = false,
   enableOverrides = false,
+  bulkUpdateModalProps,
 }: AvailabilitySettingsProps) {
   const [openSidebar, setOpenSidebar] = useState(false);
-  const [bulkUpdateModal, setBulkUpdateModal] = useState(false);
   const { t, i18n } = useLocale();
-
-  const utils = trpc.useUtils();
-  const bulkUpdateDefaultAvailabilityMutation =
-    trpc.viewer.availability.schedule.bulkUpdateToDefaultAvailability.useMutation({
-      onSuccess: () => {
-        utils.viewer.availability.list.invalidate();
-        setBulkUpdateModal(false);
-        showToast(t("success"), "success");
-      },
-    });
 
   const form = useForm<AvailabilityFormValues>({
     defaultValues: {
@@ -267,20 +262,6 @@ export function AvailabilitySettings({
       schedule: schedule.availability || [],
     },
   });
-
-  useEffect(() => {
-    const subscription = form.watch(
-      (value, { name }) => {
-        if (!!name && name.split(".")[0] !== "schedule" && name !== "name")
-          handleSubmit(value as AvailabilityFormValues);
-      },
-      {
-        ...schedule,
-        schedule: schedule.availability || [],
-      }
-    );
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
 
   const [Shell, Schedule, TimezoneSelect] = useMemo(() => {
     return isPlatform
@@ -353,7 +334,7 @@ export function AvailabilitySettings({
                       checked={value}
                       onCheckedChange={(checked) => {
                         onChange(checked);
-                        setBulkUpdateModal(checked);
+                        bulkUpdateModalProps?.setIsOpen(checked);
                       }}
                     />
                   )}
@@ -362,12 +343,13 @@ export function AvailabilitySettings({
             ) : null}
           </div>
 
-          {bulkUpdateModal && (
+          {bulkUpdateModalProps && bulkUpdateModalProps?.isOpen && (
             <BulkEditDefaultForEventsModal
-              isPending={bulkUpdateDefaultAvailabilityMutation.isPending}
-              open={bulkUpdateModal}
-              setOpen={setBulkUpdateModal}
-              bulkUpdateFunction={bulkUpdateDefaultAvailabilityMutation.mutate}
+              isPending={bulkUpdateModalProps?.isSaving}
+              open={bulkUpdateModalProps?.isOpen}
+              setOpen={bulkUpdateModalProps.setIsOpen}
+              bulkUpdateFunction={bulkUpdateModalProps?.save}
+              description={t("default_schedules_bulk_description")}
             />
           )}
 
@@ -537,7 +519,6 @@ export function AvailabilitySettings({
                     control={form.control}
                     name="schedule"
                     userTimeFormat={timeFormat}
-                    handleSubmit={handleSubmit}
                     weekStart={
                       ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(
                         weekStart

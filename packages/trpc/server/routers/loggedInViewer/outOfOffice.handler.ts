@@ -4,12 +4,14 @@ import { v4 as uuidv4 } from "uuid";
 import { selectOOOEntries } from "@calcom/app-store/zapier/api/subscriptions/listOOOEntries";
 import dayjs from "@calcom/dayjs";
 import { sendBookingRedirectNotification } from "@calcom/emails";
+import tasker from "@calcom/features/tasker";
 import type { GetSubscriberOptions } from "@calcom/features/webhooks/lib/getWebhooks";
 import getWebhooks from "@calcom/features/webhooks/lib/getWebhooks";
 import type { OOOEntryPayloadType } from "@calcom/features/webhooks/lib/sendPayload";
 import sendPayload from "@calcom/features/webhooks/lib/sendPayload";
 import { getTranslation } from "@calcom/lib/server";
 import prisma from "@calcom/prisma";
+import { SchedulingType } from "@calcom/prisma/enums";
 import type { TrpcSessionUser } from "@calcom/trpc/server/trpc";
 
 import { TRPCError } from "@trpc/server";
@@ -199,6 +201,41 @@ export const outOfOfficeCreateOrUpdate = async ({ ctx, input }: TBookingRedirect
       toUserId: toUserId ? toUserId : null,
     },
   });
+
+  // check if user is a host in a rr event type with enabled weights
+  const isHostOfWeightedRR = await prisma.host.findFirst({
+    where: {
+      userId: ctx.user.id,
+      isFixed: false,
+      eventType: {
+        schedulingType: SchedulingType.ROUND_ROBIN,
+        isRRWeightsEnabled: true,
+      },
+    },
+  });
+
+  if (isHostOfWeightedRR) {
+    tasker.create(
+      "applyOOOWeightAdjustment",
+      {
+        uuid: createdOrUpdatedOutOfOffice.uuid,
+      },
+      { scheduledAt: createdOrUpdatedOutOfOffice.end }
+    );
+
+    if (input.uuid) {
+      const payloadString = JSON.stringify({ uuid: input.uuid });
+
+      // delete task from edited OOO
+      await prisma.task.deleteMany({
+        where: {
+          type: "applyOOOWeightAdjustment",
+          payload: payloadString,
+        },
+      });
+    }
+  }
+
   let resultRedirect: Prisma.OutOfOfficeEntryGetPayload<{ select: typeof selectOOOEntries }> | null = null;
   if (createdOrUpdatedOutOfOffice) {
     const findRedirect = await prisma.outOfOfficeEntry.findFirst({

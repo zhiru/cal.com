@@ -452,6 +452,7 @@ model Team {
 
   @@unique([slug, parentId])
   @@index([parentId])
+  @@index([slug])
 }
 
 model OrganizationSettings {

@@ -18,6 +18,7 @@ import {
   TableNew,
   TableRow,
   Tooltip,
+  Switch,
 } from "@calcom/ui";
 
 import { CreateOrEditOutOfOfficeEntryModal } from "./CreateOrEditOutOfOfficeModal";
@@ -38,45 +39,93 @@ export const OutOfOfficeEntriesList = () => {
     },
   });
 
+  const toggleOOOCalendarImport = trpc.viewer.toggleOOOCalendarImport.useMutation({
+    onSuccess: async (data) => {
+      if (data.enableOOOCalendarImport) {
+        showToast("Successfully enable importing OOO data", "success");
+      } else {
+        showToast("Successfully disabled importing OOO data", "success");
+      }
+    },
+    onError: () => {
+      showToast(`An error ocurred`, "error");
+    },
+  });
+
   const [currentlyEditingOutOfOfficeEntry, setCurrentlyEditingOutOfOfficeEntry] =
     useState<BookingRedirectForm | null>(null);
   const [openModal, setOpenModal] = useState(false);
+  const [isCalendarImportEnabled, setIsCalendarImportEnabled] = useState(false);
 
   const editOutOfOfficeEntry = (entry: BookingRedirectForm) => {
     setCurrentlyEditingOutOfOfficeEntry(entry);
     setOpenModal(true);
   };
 
-  if (data === null || data?.length === 0 || (data === undefined && !isPending))
+  const connectedCalendarsQuery = trpc.viewer.connectedCalendars.useQuery();
+
+  const showImportCalendarToggle =
+    connectedCalendarsQuery.data &&
+    connectedCalendarsQuery.data.connectedCalendars.some(
+      (calendar) => calendar.integration.slug === "google-calendar"
+    );
+
+  if (data === null || data?.length === 0 || (data === undefined && !isPending)) {
     return (
-      <EmptyScreen
-        className="mt-6"
-        headline={t("ooo_empty_title")}
-        description={t("ooo_empty_description")}
-        customIcon={
-          <div className="mt-4 h-[102px]">
-            <div className="flex h-full flex-col items-center justify-center p-2 md:mt-0 md:p-0">
-              <div className="relative">
-                <div className="dark:bg-darkgray-50 absolute -left-3 -top-3 -z-20 h-[70px] w-[70px] -rotate-[24deg] rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-40 dark:opacity-80">
-                  <div className="w-12" />
-                </div>
-                <div className="dark:bg-darkgray-50 absolute -top-3 left-3 -z-10 h-[70px] w-[70px] rotate-[24deg] rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-60 dark:opacity-90">
-                  <div className="w-12" />
-                </div>
-                <div className="dark:bg-darkgray-50 relative z-0 flex h-[70px] w-[70px] items-center justify-center rounded-3xl border-2 border-[#e5e7eb] bg-white">
-                  <Icon name="clock" size={28} />
-                  <div className="dark:bg-darkgray-50 absolute right-4 top-5 h-[12px] w-[12px] rotate-[56deg] bg-white text-lg font-bold" />
-                  <span className="absolute right-4 top-3 font-sans text-sm font-extrabold">z</span>
+      <>
+        {showImportCalendarToggle && (
+          <Switch
+            label="Import full day busy events from your google calendar as OOO entries"
+            className="mb-4"
+            checked={isCalendarImportEnabled}
+            onCheckedChange={() => {
+              toggleOOOCalendarImport.mutate({});
+            }}
+          />
+        )}
+        <EmptyScreen
+          className="mt-6"
+          headline={t("ooo_empty_title")}
+          description={t("ooo_empty_description")}
+          customIcon={
+            <div className="mt-4 h-[102px]">
+              <div className="flex h-full flex-col items-center justify-center p-2 md:mt-0 md:p-0">
+                <div className="relative">
+                  <div className="dark:bg-darkgray-50 absolute -left-3 -top-3 -z-20 h-[70px] w-[70px] -rotate-[24deg] rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-40 dark:opacity-80">
+                    <div className="w-12" />
+                  </div>
+                  <div className="dark:bg-darkgray-50 absolute -top-3 left-3 -z-10 h-[70px] w-[70px] rotate-[24deg] rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-60 dark:opacity-90">
+                    <div className="w-12" />
+                  </div>
+                  <div className="dark:bg-darkgray-50 relative z-0 flex h-[70px] w-[70px] items-center justify-center rounded-3xl border-2 border-[#e5e7eb] bg-white">
+                    <Icon name="clock" size={28} />
+                    <div className="dark:bg-darkgray-50 absolute right-4 top-5 h-[12px] w-[12px] rotate-[56deg] bg-white text-lg font-bold" />
+                    <span className="absolute right-4 top-3 font-sans text-sm font-extrabold">z</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        }
-      />
+          }
+        />
+      </>
     );
+  }
+
   return (
-    <div className="border-subtle mt-6 rounded-lg border">
-      <TableNew className="border-0">
+    <div className="border-subtle mt-6 rounded-lg border-0">
+      {showImportCalendarToggle && (
+        <div className="mb-8">
+          <Switch
+            label="Import full day busy events from your connected Google Calendar as OOO entries"
+            checked={isCalendarImportEnabled}
+            onCheckedChange={() => {
+              setIsCalendarImportEnabled(!isCalendarImportEnabled);
+              toggleOOOCalendarImport.mutate({});
+            }}
+          />
+        </div>
+      )}
+      <TableNew className="mb-4">
         <TableBody>
           {data?.map((item) => (
             <TableRow key={item.id} data-testid={`table-redirect-${item.toUser?.username || "n-a"}`}>

@@ -13,7 +13,7 @@ const tasks: Record<TaskTypes, () => Promise<TaskHandler>> = {
   triggerGuestNoShowWebhook: () =>
     import("./triggerNoShow/triggerGuestNoShow").then((module) => module.triggerGuestNoShow),
   applyOOOWeightAdjustment: () =>
-    import("./applyOooWeightAdjustment").then((module) => module.applyOooWeightAdjustment),
+    import("./applyOOOWeightAdjustment").then((module) => module.applyOOOWeightAdjustment),
   sendSms: () => Promise.resolve(() => Promise.reject(new Error("Not implemented"))),
 };
 

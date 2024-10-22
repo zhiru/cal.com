@@ -16,7 +16,11 @@ import type { TrpcSessionUser } from "@calcom/trpc/server/trpc";
 
 import { TRPCError } from "@trpc/server";
 
-import type { TOutOfOfficeDelete, TOutOfOfficeInputSchema } from "./outOfOffice.schema";
+import type {
+  TOutOfOfficeDelete,
+  TOutOfOfficeInputSchema,
+  TToggleOOOCalendarImport,
+} from "./outOfOffice.schema";
 import { WebhookTriggerEvents } from ".prisma/client";
 
 type TBookingRedirect = {
@@ -213,6 +217,7 @@ export const outOfOfficeCreateOrUpdate = async ({ ctx, input }: TBookingRedirect
       },
     },
   });
+  console.log(`isHostOfWeightedRR ${isHostOfWeightedRR}`);
 
   if (isHostOfWeightedRR) {
     tasker.create(
@@ -512,4 +517,69 @@ export const outOfOfficeEntriesList = async ({ ctx }: { ctx: { user: NonNullable
   });
 
   return outOfOfficeEntries;
+};
+
+export const toggleOOOCalendarImport = async ({
+  ctx,
+  input,
+}: {
+  ctx: {
+    user: NonNullable<TrpcSessionUser>;
+  };
+  input: TToggleOOOCalendarImport;
+}) => {
+  const { teamId } = input;
+  console.log(`set OOO import for: ${ctx.user.id} teamId; ${input.teamId}`);
+
+  if (teamId) {
+    const team = await prisma.team.findFirst({
+      where: {
+        id: teamId,
+      },
+      select: {
+        enableOOOCalendarImport: true,
+      },
+    });
+
+    //check if user is allowed to make changes to this team
+
+    if (team) {
+      await prisma.team.update({
+        where: {
+          id: teamId,
+        },
+        data: {
+          enableOOOCalendarImport: !team.enableOOOCalendarImport,
+        },
+      });
+      return { enableOOOCalendarImport: !team.enableOOOCalendarImport };
+    }
+    return;
+  }
+
+  const userId = ctx.user.id;
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+    select: {
+      enableOOOCalendarImport: true,
+    },
+  });
+
+  if (user) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        enableOOOCalendarImport: !user.enableOOOCalendarImport,
+      },
+    });
+
+    return { enableOOOCalendarImport: !user.enableOOOCalendarImport };
+  }
+
+  return;
 };

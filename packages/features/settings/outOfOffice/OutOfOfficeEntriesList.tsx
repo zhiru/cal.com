@@ -28,6 +28,9 @@ export const OutOfOfficeEntriesList = () => {
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const { data, isPending } = trpc.viewer.outOfOfficeEntriesList.useQuery();
+  const { data: dataOOOCalendarImport, isPending: isPendingOOOCalendarImport } =
+    trpc.viewer.isOOOCalendarImportEnabled.useQuery();
+
   const deleteOutOfOfficeEntryMutation = trpc.viewer.outOfOfficeEntryDelete.useMutation({
     onSuccess: () => {
       showToast(t("success_deleted_entry_out_of_office"), "success");
@@ -41,11 +44,12 @@ export const OutOfOfficeEntriesList = () => {
 
   const toggleOOOCalendarImport = trpc.viewer.toggleOOOCalendarImport.useMutation({
     onSuccess: async (data) => {
-      if (data.enableOOOCalendarImport) {
+      if (data?.enableOOOCalendarImport) {
         showToast("Successfully enable importing OOO data", "success");
       } else {
         showToast("Successfully disabled importing OOO data", "success");
       }
+      utils.viewer.isOOOCalendarImportEnabled.invalidate();
     },
     onError: () => {
       showToast(`An error ocurred`, "error");
@@ -55,12 +59,12 @@ export const OutOfOfficeEntriesList = () => {
   const [currentlyEditingOutOfOfficeEntry, setCurrentlyEditingOutOfOfficeEntry] =
     useState<BookingRedirectForm | null>(null);
   const [openModal, setOpenModal] = useState(false);
-  const [isCalendarImportEnabled, setIsCalendarImportEnabled] = useState(false);
 
   const editOutOfOfficeEntry = (entry: BookingRedirectForm) => {
     setCurrentlyEditingOutOfOfficeEntry(entry);
     setOpenModal(true);
   };
+  const [isCalendarImportEnabled, setIsCalendarImportEnabled] = useState(!!dataOOOCalendarImport);
 
   const connectedCalendarsQuery = trpc.viewer.connectedCalendars.useQuery();
 
@@ -74,14 +78,15 @@ export const OutOfOfficeEntriesList = () => {
     return (
       <>
         {showImportCalendarToggle && (
-          <Switch
-            label="Import full day busy events from your google calendar as OOO entries"
-            className="mb-4"
-            checked={isCalendarImportEnabled}
-            onCheckedChange={() => {
-              toggleOOOCalendarImport.mutate({});
-            }}
-          />
+          <div className="mb-8">
+            <Switch
+              label="Import full day busy events from your google calendar as OOO entries"
+              checked={!!dataOOOCalendarImport}
+              onCheckedChange={() => {
+                toggleOOOCalendarImport.mutate({});
+              }}
+            />
+          </div>
         )}
         <EmptyScreen
           className="mt-6"

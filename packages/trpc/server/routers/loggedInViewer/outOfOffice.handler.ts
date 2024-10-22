@@ -519,6 +519,20 @@ export const outOfOfficeEntriesList = async ({ ctx }: { ctx: { user: NonNullable
   return outOfOfficeEntries;
 };
 
+export const isOOOCalendarImportEnabled = async ({
+  ctx,
+}: {
+  ctx: { user: NonNullable<TrpcSessionUser> };
+}) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: ctx.user.id,
+    },
+  });
+
+  return !!user?.enableOOOCalendarImport;
+};
+
 export const toggleOOOCalendarImport = async ({
   ctx,
   input,
@@ -565,6 +579,7 @@ export const toggleOOOCalendarImport = async ({
     },
     select: {
       enableOOOCalendarImport: true,
+      selectedCalendars: true,
     },
   });
 
@@ -577,6 +592,11 @@ export const toggleOOOCalendarImport = async ({
         enableOOOCalendarImport: !user.enableOOOCalendarImport,
       },
     });
+    // if (!user.enableOOOCalendarImport) {
+    //   // import existing OOO entries for one year
+    //   console.log(`selected cals ${JSON.stringify(user.selectedCalendars)}`);
+    //   // const selectedCalendars = user.selectedCalendars.filter()
+    // }
 
     return { enableOOOCalendarImport: !user.enableOOOCalendarImport };
   }

@@ -59,6 +59,7 @@ type AppsRouterHandlerCache = {
   connectAndJoin?: typeof import("./connectAndJoin.handler").Handler;
   outOfOfficeCreateOrUpdate?: typeof import("./outOfOffice.handler").outOfOfficeCreateOrUpdate;
   outOfOfficeEntriesList?: typeof import("./outOfOffice.handler").outOfOfficeEntriesList;
+  isOOOCalendarImportEnabled?: typeof import("./outOfOffice.handler").isOOOCalendarImportEnabled;
   outOfOfficeEntryDelete?: typeof import("./outOfOffice.handler").outOfOfficeEntryDelete;
   toggleOOOCalendarImport?: typeof import("./outOfOffice.handler").toggleOOOCalendarImport;
   addSecondaryEmail?: typeof import("./addSecondaryEmail.handler").addSecondaryEmailHandler;
@@ -455,6 +456,20 @@ export const loggedInViewerRouter = router({
 
     return UNSTABLE_HANDLER_CACHE.outOfOfficeEntriesList({ ctx });
   }),
+  isOOOCalendarImportEnabled: authedProcedure.query(async ({ ctx }) => {
+    if (!UNSTABLE_HANDLER_CACHE.isOOOCalendarImportEnabled) {
+      UNSTABLE_HANDLER_CACHE.isOOOCalendarImportEnabled = (
+        await import("./outOfOffice.handler")
+      ).isOOOCalendarImportEnabled;
+    }
+
+    // Unreachable code but required for type safety
+    if (!UNSTABLE_HANDLER_CACHE.isOOOCalendarImportEnabled) {
+      throw new Error("Failed to load handler");
+    }
+    return UNSTABLE_HANDLER_CACHE.isOOOCalendarImportEnabled({ ctx });
+  }),
+
   outOfOfficeEntryDelete: authedProcedure.input(ZOutOfOfficeDelete).mutation(async ({ ctx, input }) => {
     if (!UNSTABLE_HANDLER_CACHE.outOfOfficeEntryDelete) {
       UNSTABLE_HANDLER_CACHE.outOfOfficeEntryDelete = (

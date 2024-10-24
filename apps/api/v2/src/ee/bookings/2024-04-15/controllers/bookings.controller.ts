@@ -111,9 +111,8 @@ export class BookingsController_2024_04_15 {
     @Query() queryParams: GetBookingsInput_2024_04_15
   ): Promise<GetBookingsOutput_2024_04_15> {
     const { filters, cursor, limit } = queryParams;
-    const bookingListingByStatus = filters?.status ?? Status_2024_04_15["upcoming"];
     const bookings = await getAllUserBookings({
-      bookingListingByStatus: [bookingListingByStatus],
+      bookingListingByStatus: [filters?.status],
       skip: cursor ?? 0,
       take: limit ?? 10,
       filters,

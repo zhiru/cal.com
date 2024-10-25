@@ -18,7 +18,6 @@ import {
   TableNew,
   TableRow,
   Tooltip,
-  Switch,
 } from "@calcom/ui";
 
 import { CreateOrEditOutOfOfficeEntryModal } from "./CreateOrEditOutOfOfficeModal";
@@ -36,20 +35,6 @@ export const OutOfOfficeEntriesList = () => {
       showToast(t("success_deleted_entry_out_of_office"), "success");
       utils.viewer.outOfOfficeEntriesList.invalidate();
       useFormState;
-    },
-    onError: () => {
-      showToast(`An error ocurred`, "error");
-    },
-  });
-
-  const toggleOOOCalendarImport = trpc.viewer.toggleOOOCalendarImport.useMutation({
-    onSuccess: async (data) => {
-      if (data?.enableOOOCalendarImport) {
-        showToast("Successfully enable importing OOO data", "success");
-      } else {
-        showToast("Successfully disabled importing OOO data", "success");
-      }
-      utils.viewer.isOOOCalendarImportEnabled.invalidate();
     },
     onError: () => {
       showToast(`An error ocurred`, "error");
@@ -77,17 +62,6 @@ export const OutOfOfficeEntriesList = () => {
   if (data === null || data?.length === 0 || (data === undefined && !isPending)) {
     return (
       <>
-        {showImportCalendarToggle && (
-          <div className="mb-8">
-            <Switch
-              label="Import full day busy events from your google calendar as OOO entries"
-              checked={!!dataOOOCalendarImport}
-              onCheckedChange={() => {
-                toggleOOOCalendarImport.mutate({});
-              }}
-            />
-          </div>
-        )}
         <EmptyScreen
           className="mt-6"
           headline={t("ooo_empty_title")}
@@ -118,18 +92,6 @@ export const OutOfOfficeEntriesList = () => {
 
   return (
     <div className="border-subtle mt-6 rounded-lg border-0">
-      {showImportCalendarToggle && (
-        <div className="mb-8">
-          <Switch
-            label="Import full day busy events from your connected Google Calendar as OOO entries"
-            checked={isCalendarImportEnabled}
-            onCheckedChange={() => {
-              setIsCalendarImportEnabled(!isCalendarImportEnabled);
-              toggleOOOCalendarImport.mutate({});
-            }}
-          />
-        </div>
-      )}
       <TableNew className="mb-4">
         <TableBody>
           {data?.map((item) => (

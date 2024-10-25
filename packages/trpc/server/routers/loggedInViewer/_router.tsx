@@ -14,7 +14,7 @@ import { ZGetDownloadLinkOfCalVideoRecordingsInputSchema } from "./getDownloadLi
 import { ZIntegrationsInputSchema } from "./integrations.schema";
 import { ZLocationOptionsInputSchema } from "./locationOptions.schema";
 import { ZNoShowInputSchema } from "./markNoShow.schema";
-import { ZOutOfOfficeInputSchema, ZOutOfOfficeDelete, ZToggleOOOCalendarImport } from "./outOfOffice.schema";
+import { ZOutOfOfficeInputSchema, ZOutOfOfficeDelete } from "./outOfOffice.schema";
 import { me } from "./procedures/me";
 import { platformMe } from "./procedures/platformMe";
 import { teamsAndUserProfilesQuery } from "./procedures/teamsAndUserProfilesQuery";
@@ -61,7 +61,6 @@ type AppsRouterHandlerCache = {
   outOfOfficeEntriesList?: typeof import("./outOfOffice.handler").outOfOfficeEntriesList;
   isOOOCalendarImportEnabled?: typeof import("./outOfOffice.handler").isOOOCalendarImportEnabled;
   outOfOfficeEntryDelete?: typeof import("./outOfOffice.handler").outOfOfficeEntryDelete;
-  toggleOOOCalendarImport?: typeof import("./outOfOffice.handler").toggleOOOCalendarImport;
   addSecondaryEmail?: typeof import("./addSecondaryEmail.handler").addSecondaryEmailHandler;
   getTravelSchedules?: typeof import("./getTravelSchedules.handler").getTravelSchedulesHandler;
   outOfOfficeReasonList?: typeof import("./outOfOfficeReasons.handler").outOfOfficeReasonList;
@@ -484,22 +483,6 @@ export const loggedInViewerRouter = router({
 
     return UNSTABLE_HANDLER_CACHE.outOfOfficeEntryDelete({ ctx, input });
   }),
-  toggleOOOCalendarImport: authedProcedure
-    .input(ZToggleOOOCalendarImport)
-    .mutation(async ({ ctx, input }) => {
-      if (!UNSTABLE_HANDLER_CACHE.toggleOOOCalendarImport) {
-        UNSTABLE_HANDLER_CACHE.toggleOOOCalendarImport = (
-          await import("./outOfOffice.handler")
-        ).toggleOOOCalendarImport;
-      }
-
-      // Unreachable code but required for type safety
-      if (!UNSTABLE_HANDLER_CACHE.toggleOOOCalendarImport) {
-        throw new Error("Failed to load handler");
-      }
-
-      return UNSTABLE_HANDLER_CACHE.toggleOOOCalendarImport({ ctx, input });
-    }),
   addSecondaryEmail: authedProcedure.input(ZAddSecondaryEmailInputSchema).mutation(async ({ ctx, input }) => {
     if (!UNSTABLE_HANDLER_CACHE.addSecondaryEmail) {
       UNSTABLE_HANDLER_CACHE.addSecondaryEmail = (

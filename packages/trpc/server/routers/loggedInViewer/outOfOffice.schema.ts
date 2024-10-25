@@ -19,9 +19,3 @@ export const ZOutOfOfficeDelete = z.object({
 });
 
 export type TOutOfOfficeDelete = z.infer<typeof ZOutOfOfficeDelete>;
-
-export const ZToggleOOOCalendarImport = z.object({
-  teamId: z.number().optional(),
-});
-
-export type TToggleOOOCalendarImport = z.infer<typeof ZToggleOOOCalendarImport>;

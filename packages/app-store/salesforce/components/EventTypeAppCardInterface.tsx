@@ -27,6 +27,7 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
   const createEventOn = getAppData("createEventOn") ?? SalesforceRecordEnum.CONTACT;
   const onBookingWriteToEventObject = getAppData("onBookingWriteToEventObject") ?? false;
   const onBookingWriteToEventObjectMap = getAppData("onBookingWriteToEventObjectMap") ?? {};
+  const createEventOnContactFallbackToLead = getAppData("createEventOnContactFallbackToLead") ?? false;
   const { t } = useLocale();
 
   const recordOptions = [
@@ -80,16 +81,28 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
           />
         </div>
         {createEventOnSelectedOption.value === SalesforceRecordEnum.CONTACT ? (
-          <div>
-            <Switch
-              label={t("skip_contact_creation", { appName: "Salesforce" })}
-              labelOnLeading
-              checked={isSkipContactCreationEnabled}
-              onCheckedChange={(checked) => {
-                setAppData("skipContactCreation", checked);
-              }}
-            />
-          </div>
+          <>
+            <div>
+              <Switch
+                label="If contact does not exist, search for a lead to create event on"
+                labelOnLeading
+                checked={createEventOnContactFallbackToLead}
+                onCheckedChange={(checked) => {
+                  setAppData("createEventOnContactFallbackToLead", checked);
+                }}
+              />
+            </div>
+            <div className="mt-2">
+              <Switch
+                label={t("skip_contact_creation", { appName: "Salesforce" })}
+                labelOnLeading
+                checked={isSkipContactCreationEnabled}
+                onCheckedChange={(checked) => {
+                  setAppData("skipContactCreation", checked);
+                }}
+              />
+            </div>
+          </>
         ) : null}
         {createEventOnSelectedOption.value === SalesforceRecordEnum.ACCOUNT ? (
           <>

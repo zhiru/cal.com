@@ -329,9 +329,28 @@ export default class SalesforceCRMService implements CRM {
     }
     const results = await conn.query(soql);
 
-    if (!results || !results.records.length) return [];
+    let records: ContactRecord[];
 
-    const records = results.records as ContactRecord[];
+    if (!results || !results.records.length) {
+      if (
+        appOptions.createEventOn === SalesforceRecordEnum.CONTACT &&
+        appOptions.createEventOnContactFallbackToLead
+      ) {
+        // Get any matching leads
+        const leadSearch = await conn.query(
+          `SELECT Id, Email, OwnerId FROM ${SalesforceRecordEnum.LEAD} WHERE Email IN ('${emailArray.join(
+            "','"
+          )}')`
+        );
+
+        if (!leadSearch || !leadSearch.records.length) return [];
+        records = leadSearch.records as ContactRecord[];
+      } else {
+        return [];
+      }
+    } else {
+      records = results.records as ContactRecord[];
+    }
 
     if (includeOwner || forRoundRobinSkip) {
       const ownerIds: Set<string> = new Set();

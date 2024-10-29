@@ -99,28 +99,18 @@ export async function getUserFromSession(ctx: TRPCContextInner, session: Maybe<S
 
   const userMetaData = userMetadata.parse(user.metadata || {});
   const orgMetadata = teamMetadataSchema.parse(user.profile?.organization?.metadata || {});
-  // This helps to prevent reaching the 4MB payload limit by avoiding base64 and instead passing the avatar url
-
   const locale = user?.locale ?? ctx.locale;
 
-  const isOrgAdmin = !!user.profile?.organization?.members.filter(
-    (member) => (member.role === "ADMIN" || member.role === "OWNER") && member.userId === user.id
-  ).length;
-
-  if (isOrgAdmin) {
+  if (user.isOrgAdmin) {
     logger.debug("User is an org admin", safeStringify({ userId: user.id }));
   } else {
     logger.debug("User is not an org admin", safeStringify({ userId: user.id }));
-  }
-  // Want to reduce the amount of data being sent
-  if (isOrgAdmin && user.profile?.organization?.members) {
-    user.profile.organization.members = [];
   }
 
   const organization = {
     ...user.profile?.organization,
     id: user.profile?.organization?.id ?? null,
-    isOrgAdmin,
+    isOrgAdmin: user.isOrgAdmin,
     metadata: orgMetadata,
     requestedSlug: orgMetadata?.requestedSlug ?? null,
   };

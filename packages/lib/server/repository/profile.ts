@@ -6,6 +6,7 @@ import { safeStringify } from "@calcom/lib/safeStringify";
 import prisma from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
 import type { Team } from "@calcom/prisma/client";
+import { MembershipRole } from "@calcom/prisma/enums";
 import type { UpId, UserAsPersonalProfile, UserProfile } from "@calcom/types/UserProfile";
 
 import logger from "../../logger";
@@ -354,7 +355,19 @@ export class ProfileRepository {
       },
       include: {
         user: {
-          select: userSelect,
+          select: {
+            ...userSelect,
+            teams: {
+              where: {
+                role: {
+                  in: [MembershipRole.OWNER, MembershipRole.ADMIN],
+                },
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
         },
         movedFromUser: {
           select: {
@@ -376,9 +389,6 @@ export class ProfileRepository {
               select: {
                 lockEventTypeCreationForUsers: true,
               },
-            },
-            members: {
-              select: membershipSelect,
             },
           },
         },
@@ -560,25 +570,6 @@ export class ProfileRepository {
       organization: null,
     };
   }
-
-  static _getPrismaWhereForProfilesOfOrg({ orgSlug }: { orgSlug: string | null }) {
-    return {
-      profiles: {
-        ...(orgSlug
-          ? {
-              some: {
-                organization: {
-                  slug: orgSlug,
-                },
-              },
-            }
-          : // If it's not orgSlug we want to ensure that no profile is there. Having a profile means that the user is a member of some organization.
-            {
-              none: {},
-            }),
-      },
-    };
-  }
 }
 
 export const normalizeProfile = <
@@ -591,8 +582,13 @@ export const normalizeProfile = <
 >(
   profile: T
 ) => {
+  const { teams, ...user } =
+    profile.user?.teams instanceof Array ? profile.user : { ...profile.user, teams: [] };
+  const isOrgAdmin = teams.map((t) => t.id).includes(profile.organizationId);
   return {
     ...profile,
+    user,
+    isOrgAdmin,
     upId: profile.id.toString(),
     organization: getParsedTeam(profile.organization),
     // Make these ↓ props ISO strings so that they can be returned from getServerSideProps as is without any issues

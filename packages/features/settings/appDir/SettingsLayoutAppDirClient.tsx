@@ -382,6 +382,15 @@ const TeamListCollapsible = () => {
                         textClassNames="px-3 text-emphasis font-medium text-sm"
                         disableChevron
                       />
+                      {/* This should be available for all teams but we only have notifications for subteams at the moment */}
+                      {team.parentId ? (
+                        <VerticalTabItem
+                          name={t("notifications")}
+                          href={`/settings/teams/${team.id}/notifications`}
+                          textClassNames="px-3 text-emphasis font-medium text-sm"
+                          disableChevron
+                        />
+                      ) : null}
                     </>
                   )}
                 </CollapsibleContent>

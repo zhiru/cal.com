@@ -343,6 +343,7 @@ model User {
   NotificationsSubscriptions NotificationsSubscriptions[]
   referralLinkId             String?
   features                   UserFeatures[]
+  NotificationSetting        NotificationSetting[]
 
   @@unique([email])
   @@unique([email, username])
@@ -448,7 +449,8 @@ model Team {
 
   /// @zod.custom(imports.intervalLimitsType)
   bookingLimits                Json?
-  includeManagedEventsInLimits Boolean @default(false)
+  includeManagedEventsInLimits Boolean               @default(false)
+  NotificationSetting          NotificationSetting[]
 
   @@unique([slug, parentId])
   @@index([parentId])
@@ -1580,4 +1582,61 @@ model AttributeToUser {
   attributeOptionId String
 
   @@unique([memberId, attributeOptionId])
+}
+
+enum NotificationTriggerEvents {
+  NO_SLOTS_FOR_TEAM
+}
+
+enum NotificationDeliveryMethod {
+  EMAIL
+  WEBHOOK
+}
+
+model NotificationTemplate {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  // The event that triggers this notification
+  triggerEvent NotificationTriggerEvents
+
+  // If this is a system template that can't be modified
+  isSystem Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Settings that reference this template
+  notificationSettings NotificationSetting[]
+
+  @@index([triggerEvent])
+}
+
+model NotificationSetting {
+  id String @id @default(uuid())
+
+  // Who this setting belongs to
+  team   Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+
+  // The template this setting is for
+  template   NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+
+  // How the notification should be delivered
+  method NotificationDeliveryMethod
+
+  // If notifications are enabled for this template
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, templateId, method])
+  @@unique([userId, templateId, method])
+  @@index([teamId])
+  @@index([userId])
 }

@@ -9,6 +9,7 @@ type EventDetails = {
   username: string;
   eventSlug: string;
   startTime: Dayjs;
+  endTime: Dayjs;
   visitorTimezone?: string;
   visitorUid?: string;
 };
@@ -30,6 +31,7 @@ const constructRedisKey = (eventDetails: EventDetails, orgSlug?: string) => {
 const constructDataHash = (eventDetails: EventDetails) => {
   const obj = {
     st: eventDetails.startTime.format("YYYY-MM-DD"),
+    et: eventDetails.endTime.format("YYYY-MM-DD"),
     vTz: eventDetails?.visitorTimezone,
     vUuid: eventDetails?.visitorUid,
   };

@@ -1,4 +1,4 @@
-import { sendEmail } from "@calcom/lib/server/emails";
+import { sendEmail } from "@calcom/features/tasker/tasks";
 
 import type { NotificationDeliverer, NotificationPayload, NotificationTemplate } from "../interfaces";
 
@@ -8,21 +8,48 @@ export class EmailDeliverer implements NotificationDeliverer {
     const { to, data } = notification;
 
     // Compile template with data
-    const compiledSubject = this.compileTemplate(template.subject || "", data);
-    const compiledBody = this.compileTemplate(template.body, data);
+    const emails = await this.getUserOrUsersEmail(to);
 
-    await sendEmail({
-      to: to.userId // Get user email from DB : undefined,
-        ? subject
-        : compiledSubject,
-      html: compiledBody,
-      // Add other email options as needed
+    emails.forEach((email) => {
+      sendEmail({
+        to: email,
+        template: template.triggerEvent,
+        payload: JSON.stringify(data),
+      });
     });
   }
 
-  private compileTemplate(template: string, data: Record<string, any>): string {
-    // Implement template compilation logic
-    // Could use a template engine like handlebars
-    return template; // Placeholder
+  private async getUserOrUsersEmail({
+    userId,
+    teamId,
+  }:
+    | {
+        userId: number | undefined;
+        teamId?: never;
+      }
+    | {
+        userId?: never;
+        teamId: number;
+      }): Promise<string[]> {
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          email: true,
+        },
+      });
+      return user?.email ? [user.email] : [];
+    }
+
+    if (teamId) {
+      const teamMemberships = await prisma.membership.findMany({
+        where: { teamId },
+        select: {
+          user: { select: { email: true } },
+        },
+      });
+
+      return teamMemberships.map((membership) => membership.user.email).filter(Boolean);
+    }
   }
 }

@@ -1584,6 +1584,7 @@ model AttributeToUser {
   @@unique([memberId, attributeOptionId])
 }
 
+// Notification Tables
 enum NotificationTriggerEvents {
   NO_SLOTS_FOR_TEAM
 }
@@ -1591,6 +1592,12 @@ enum NotificationTriggerEvents {
 enum NotificationDeliveryMethod {
   EMAIL
   WEBHOOK
+}
+
+enum NotificationBelongsToEntity {
+  USER
+  TEAM
+  ORGANIZATION
 }
 
 model NotificationTemplate {
@@ -1601,13 +1608,11 @@ model NotificationTemplate {
   // The event that triggers this notification
   triggerEvent NotificationTriggerEvents
 
-  // If this is a system template that can't be modified
-  isSystem Boolean @default(false)
+  belongsTo NotificationBelongsToEntity
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Settings that reference this template
   notificationSettings NotificationSetting[]
 
   @@index([triggerEvent])
@@ -1627,16 +1632,18 @@ model NotificationSetting {
   templateId String
 
   // How the notification should be delivered
-  method NotificationDeliveryMethod
+  methods NotificationDeliveryMethod[]
 
-  // If notifications are enabled for this template
   enabled Boolean @default(true)
+
+  // The minimum team role required to receive this notification
+  minTeamRoleRequired MembershipRole @default(MEMBER)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([teamId, templateId, method])
-  @@unique([userId, templateId, method])
+  @@unique([teamId, templateId, methods])
+  @@unique([userId, templateId, methods])
   @@index([teamId])
   @@index([userId])
 }

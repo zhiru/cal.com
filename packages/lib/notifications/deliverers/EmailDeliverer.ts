@@ -10,6 +10,7 @@ export class EmailDeliverer implements NotificationDeliverer {
     // Compile template with data
     const emails = await this.getUserOrUsersEmail(to);
 
+    // I wonder if we can move the users in this to BCC to only send one email instead of potentially 100s for a large team
     emails.forEach((email) => {
       sendEmail({
         to: email,

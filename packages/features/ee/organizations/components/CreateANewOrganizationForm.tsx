@@ -1,6 +1,7 @@
-import { useSession } from "next-auth/react";
-import { signIn } from "next-auth/react";
+"use client";
+
 import type { SessionContextValue } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -14,8 +15,7 @@ import { telemetryEventTypes, useTelemetry } from "@calcom/lib/telemetry";
 import { UserPermissionRole } from "@calcom/prisma/enums";
 import { trpc } from "@calcom/trpc/react";
 import type { Ensure } from "@calcom/types/utils";
-import { Button, Form, TextField, Alert, RadioGroup as RadioArea } from "@calcom/ui";
-import { ArrowRight } from "@calcom/ui/components/icon";
+import { Alert, Button, Form, Label, RadioGroup as RadioArea, TextField, ToggleGroup } from "@calcom/ui";
 
 function extractDomainFromEmail(email: string) {
   let out = "";
@@ -34,22 +34,33 @@ export const CreateANewOrganizationForm = () => {
   return <CreateANewOrganizationFormChild session={session} />;
 };
 
-const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionContextValue, "data"> }) => {
+enum BillingPeriod {
+  MONTHLY = "MONTHLY",
+  ANNUALLY = "ANNUALLY",
+}
+
+const CreateANewOrganizationFormChild = ({
+  session,
+}: {
+  session: Ensure<SessionContextValue, "data">;
+  isPlatformOrg?: boolean;
+}) => {
   const { t } = useLocale();
   const router = useRouter();
   const telemetry = useTelemetry();
   const [serverErrorMessage, setServerErrorMessage] = useState<string | null>(null);
   const isAdmin = session.data.user.role === UserPermissionRole.ADMIN;
-  const isImpersonated = session.data.user.impersonatedBy;
   const defaultOrgOwnerEmail = session.data.user.email ?? "";
   const newOrganizationFormMethods = useForm<{
     name: string;
     seats: number;
+    billingPeriod: BillingPeriod;
     pricePerSeat: number;
     slug: string;
     orgOwnerEmail: string;
   }>({
     defaultValues: {
+      billingPeriod: BillingPeriod.MONTHLY,
       slug: !isAdmin ? deriveSlugFromEmail(defaultOrgOwnerEmail) : undefined,
       orgOwnerEmail: !isAdmin ? defaultOrgOwnerEmail : undefined,
       name: !isAdmin ? deriveOrgNameFromEmail(defaultOrgOwnerEmail) : undefined,
@@ -105,6 +116,39 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
               <Alert severity="error" message={serverErrorMessage} />
             </div>
           )}
+          {isAdmin && (
+            <div className="mb-5">
+              <Controller
+                name="billingPeriod"
+                control={newOrganizationFormMethods.control}
+                render={({ field: { value, onChange } }) => (
+                  <>
+                    <Label htmlFor="billingPeriod">Billing Period</Label>
+                    <ToggleGroup
+                      isFullWidth
+                      id="billingPeriod"
+                      value={value}
+                      onValueChange={(e: BillingPeriod) => {
+                        if ([BillingPeriod.ANNUALLY, BillingPeriod.MONTHLY].includes(e)) {
+                          onChange(e);
+                        }
+                      }}
+                      options={[
+                        {
+                          value: "MONTHLY",
+                          label: "Monthly",
+                        },
+                        {
+                          value: "ANNUALLY",
+                          label: "Annually",
+                        },
+                      ]}
+                    />
+                  </>
+                )}
+              />
+            </div>
+          )}
           <Controller
             name="orgOwnerEmail"
             control={newOrganizationFormMethods.control}
@@ -117,7 +161,7 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
                   containerClassName="w-full"
                   placeholder="john@acme.com"
                   name="orgOwnerEmail"
-                  disabled={!isAdmin && !isImpersonated}
+                  disabled={!isAdmin}
                   label={t("admin_email")}
                   defaultValue={value}
                   onChange={(e) => {
@@ -190,7 +234,7 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
           />
         </div>
 
-        {(isAdmin || isImpersonated) && (
+        {isAdmin && (
           <>
             <section className="grid grid-cols-2 gap-2">
               <div className="w-full">
@@ -205,7 +249,7 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
                         name="seats"
                         type="number"
                         label="Seats (optional)"
-                        min={MINIMUM_NUMBER_OF_ORG_SEATS}
+                        min={isAdmin ? 1 : MINIMUM_NUMBER_OF_ORG_SEATS}
                         defaultValue={value || MINIMUM_NUMBER_OF_ORG_SEATS}
                         onChange={(e) => {
                           onChange(+e.target.value);
@@ -273,7 +317,7 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
               newOrganizationFormMethods.formState.isSubmitting || createOrganizationMutation.isPending
             }
             color="primary"
-            EndIcon={ArrowRight}
+            EndIcon="arrow-right"
             type="submit"
             form="createOrg"
             className="w-full justify-center">
@@ -285,13 +329,13 @@ const CreateANewOrganizationFormChild = ({ session }: { session: Ensure<SessionC
   );
 };
 
-function deriveSlugFromEmail(email: string) {
+export function deriveSlugFromEmail(email: string) {
   const domain = extractDomainFromEmail(email);
 
   return domain;
 }
 
-function deriveOrgNameFromEmail(email: string) {
+export function deriveOrgNameFromEmail(email: string) {
   const domain = extractDomainFromEmail(email);
 
   return domain.charAt(0).toUpperCase() + domain.slice(1);

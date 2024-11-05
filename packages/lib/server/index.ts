@@ -8,4 +8,5 @@ export { getLuckyUser } from "./getLuckyUser";
 export { getServerErrorFromUnknown } from "./getServerErrorFromUnknown";
 export { getTranslation } from "./i18n";
 export { modularize } from "./modularize";
+export { getDefaultLocations } from "./getDefaultLocations";
 export { default as perfObserver } from "./perfObserver";

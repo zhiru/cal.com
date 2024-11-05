@@ -7,10 +7,13 @@ import type { SSRConfig } from "next-i18next";
 import { appWithTranslation } from "next-i18next";
 import { ThemeProvider } from "next-themes";
 import type { AppProps as NextAppProps, AppProps as NextJsAppProps } from "next/app";
+import dynamic from "next/dynamic";
 import type { ParsedUrlQuery } from "querystring";
 import type { PropsWithChildren, ReactNode } from "react";
 import { useEffect } from "react";
+import CacheProvider from "react-inlinesvg/provider";
 
+import DynamicPostHogProvider from "@calcom/features/ee/event-tracking/lib/posthog/providerDynamic";
 import { OrgBrandingProvider } from "@calcom/features/ee/organizations/context/provider";
 import DynamicHelpscoutProvider from "@calcom/features/ee/support/lib/helpscout/providerDynamic";
 import DynamicIntercomProvider from "@calcom/features/ee/support/lib/intercom/providerDynamic";
@@ -54,6 +57,13 @@ export type AppProps = Omit<
   /** Will be defined only is there was an error */
   err?: Error;
 };
+
+const PostHogPageView = dynamic(
+  () => import("@calcom/features/ee/event-tracking/lib/posthog/web/PostHogPageView"),
+  {
+    ssr: false,
+  }
+);
 
 type AppPropsWithChildren = AppProps & {
   children: ReactNode;
@@ -144,10 +154,10 @@ const CalcomThemeProvider = (props: CalcomThemeProps) => {
   const embedNamespace = getEmbedNamespace(props.router.query);
   const isEmbedMode = typeof embedNamespace === "string";
 
-  const themeProviderProps = getThemeProviderProps({ props, isEmbedMode, embedNamespace });
+  const { key, ...themeProviderProps } = getThemeProviderProps({ props, isEmbedMode, embedNamespace });
 
   return (
-    <ThemeProvider {...themeProviderProps}>
+    <ThemeProvider key={key} {...themeProviderProps}>
       {/* Embed Mode can be detected reliably only on client side here as there can be static generated pages as well which can't determine if it's embed mode at backend */}
       {/* color-scheme makes background:transparent not work in iframe which is required by embed. */}
       {typeof window !== "undefined" && !isEmbedMode && (
@@ -215,7 +225,7 @@ function getThemeProviderProps({
   const isBookingPageThemeSupportRequired = themeSupport === ThemeSupport.Booking;
   const themeBasis = props.themeBasis;
 
-  if ((isBookingPageThemeSupportRequired || isEmbedMode) && !themeBasis) {
+  if (!process.env.NEXT_PUBLIC_IS_E2E && (isBookingPageThemeSupportRequired || isEmbedMode) && !themeBasis) {
     console.warn(
       "`themeBasis` is required for booking page theme support. Not providing it will cause theme flicker."
     );
@@ -299,7 +309,10 @@ const AppProviders = (props: AppPropsWithChildren) => {
               router={props.router}>
               <FeatureFlagsProvider>
                 <OrgBrandProvider>
-                  <MetaProvider>{props.children}</MetaProvider>
+                  {/* @ts-expect-error FIXME remove this comment when upgrading typescript to v5 */}
+                  <CacheProvider>
+                    <MetaProvider>{props.children}</MetaProvider>
+                  </CacheProvider>
                 </OrgBrandProvider>
               </FeatureFlagsProvider>
             </CalcomThemeProvider>
@@ -315,7 +328,12 @@ const AppProviders = (props: AppPropsWithChildren) => {
 
   return (
     <DynamicHelpscoutProvider>
-      <DynamicIntercomProvider>{RemainingProviders}</DynamicIntercomProvider>
+      <DynamicIntercomProvider>
+        <DynamicPostHogProvider>
+          <PostHogPageView />
+          {RemainingProviders}
+        </DynamicPostHogProvider>
+      </DynamicIntercomProvider>
     </DynamicHelpscoutProvider>
   );
 };

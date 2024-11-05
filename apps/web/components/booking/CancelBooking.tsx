@@ -1,12 +1,11 @@
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { sdkActionManager } from "@calcom/embed-core/embed-iframe";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { useRefreshData } from "@calcom/lib/hooks/useRefreshData";
 import { collectPageParameters, telemetryEventTypes, useTelemetry } from "@calcom/lib/telemetry";
 import type { RecurringEvent } from "@calcom/types/Calendar";
-import { Button, TextArea } from "@calcom/ui";
-import { X } from "@calcom/ui/components/icon";
+import { Button, Icon, TextArea } from "@calcom/ui";
 
 type Props = {
   booking: {
@@ -24,6 +23,7 @@ type Props = {
   theme: string | null;
   allRemainingBookings: boolean;
   seatReferenceUid?: string;
+  currentUserEmail?: string;
   bookingCancelledEventProps: {
     booking: unknown;
     organizer: {
@@ -38,14 +38,16 @@ type Props = {
 export default function CancelBooking(props: Props) {
   const [cancellationReason, setCancellationReason] = useState<string>("");
   const { t } = useLocale();
-  const router = useRouter();
-  const { booking, allRemainingBookings, seatReferenceUid, bookingCancelledEventProps } = props;
+  const refreshData = useRefreshData();
+  const { booking, allRemainingBookings, seatReferenceUid, bookingCancelledEventProps, currentUserEmail } =
+    props;
   const [loading, setLoading] = useState(false);
   const telemetry = useTelemetry();
   const [error, setError] = useState<string | null>(booking ? null : t("booking_already_cancelled"));
 
   const cancelBookingRef = useCallback((node: HTMLTextAreaElement) => {
     if (node !== null) {
+      // eslint-disable-next-line @calcom/eslint/no-scroll-into-view-embed -- CancelBooking is not usually used in embed mode
       node.scrollIntoView({ behavior: "smooth" });
       node.focus();
     }
@@ -57,7 +59,7 @@ export default function CancelBooking(props: Props) {
       {error && (
         <div className="mt-8">
           <div className="bg-error mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-            <X className="h-6 w-6 text-red-600" />
+            <Icon name="x" className="h-6 w-6 text-red-600" />
           </div>
           <div className="mt-3 text-center sm:mt-5">
             <h3 className="text-emphasis text-lg font-medium leading-6" id="modal-title">
@@ -100,6 +102,7 @@ export default function CancelBooking(props: Props) {
                       allRemainingBookings,
                       // @NOTE: very important this shouldn't cancel with number ID use uid instead
                       seatReferenceUid,
+                      cancelledBy: currentUserEmail,
                     }),
                     headers: {
                       "Content-Type": "application/json",
@@ -118,7 +121,7 @@ export default function CancelBooking(props: Props) {
                       ...bookingCancelledEventProps,
                       booking: bookingWithCancellationReason,
                     });
-                    router.refresh();
+                    refreshData();
                   } else {
                     setLoading(false);
                     setError(

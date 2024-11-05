@@ -21,6 +21,11 @@ export type VariablesType = {
   meetingUrl?: string;
   cancelLink?: string;
   rescheduleLink?: string;
+  ratingUrl?: string;
+  noShowUrl?: string;
+  attendeeTimezone?: string;
+  eventTimeInAttendeeTimezone?: Dayjs;
+  eventEndTimeInAttendeeTimezone?: Dayjs;
 };
 
 const customTemplate = (
@@ -79,7 +84,18 @@ const customTemplate = (
     .replaceAll("{TIMEZONE}", variables.timeZone || "")
     .replaceAll("{CANCEL_URL}", cancelLink)
     .replaceAll("{RESCHEDULE_URL}", rescheduleLink)
-    .replaceAll("{MEETING_URL}", variables.meetingUrl || "");
+    .replaceAll("{MEETING_URL}", variables.meetingUrl || "")
+    .replaceAll("{RATING_URL}", variables.ratingUrl || "")
+    .replaceAll("{NO_SHOW_URL}", variables.noShowUrl || "")
+    .replaceAll("{ATTENDEE_TIMEZONE}", variables.attendeeTimezone || "")
+    .replaceAll(
+      "{EVENT_START_TIME_IN_ATTENDEE_TIMEZONE}",
+      variables.eventTimeInAttendeeTimezone?.format(currentTimeFormat) || ""
+    )
+    .replaceAll(
+      "{EVENT_END_TIME_IN_ATTENDEE_TIMEZONE}",
+      variables.eventEndTimeInAttendeeTimezone?.format(currentTimeFormat) || ""
+    );
 
   const customInputvariables = dynamicText.match(/\{(.+?)}/g)?.map((variable) => {
     return variable.replace("{", "").replace("}", "");

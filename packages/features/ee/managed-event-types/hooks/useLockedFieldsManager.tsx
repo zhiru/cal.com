@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-restricted-imports
 import { get } from "lodash";
 import type { TFunction } from "next-i18next";
-import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type z from "zod";
 
@@ -11,12 +11,11 @@ import { classNames } from "@calcom/lib";
 import type { Prisma } from "@calcom/prisma/client";
 import { SchedulingType } from "@calcom/prisma/enums";
 import type { _EventTypeModel } from "@calcom/prisma/zod/eventtype";
-import { Tooltip, Badge, Switch } from "@calcom/ui";
-import { Lock, Unlock } from "@calcom/ui/components/icon";
+import { Badge, Icon, Switch, Tooltip } from "@calcom/ui";
 
 export const LockedSwitch = (
   isManagedEventType: boolean,
-  [isLocked, setIsLocked]: [boolean, Dispatch<SetStateAction<boolean>>],
+  [fieldState, setFieldState]: [Record<string, boolean>, Dispatch<SetStateAction<Record<string, boolean>>>],
   fieldName: string,
   setUnlockedFields: (fieldName: string, val: boolean | undefined) => void,
   options = { simple: false }
@@ -25,10 +24,13 @@ export const LockedSwitch = (
     <Switch
       data-testid={`locked-indicator-${fieldName}`}
       onCheckedChange={(enabled) => {
-        setIsLocked(enabled);
+        setFieldState({
+          ...fieldState,
+          [fieldName]: enabled,
+        });
         setUnlockedFields(fieldName, !enabled || undefined);
       }}
-      checked={isLocked}
+      checked={fieldState[fieldName]}
       small={!options.simple}
     />
   ) : null;
@@ -37,12 +39,13 @@ export const LockedSwitch = (
 export const LockedIndicator = (
   isChildrenManagedEventType: boolean,
   isManagedEventType: boolean,
-  [isLocked, setIsLocked]: [boolean, Dispatch<SetStateAction<boolean>>],
+  [fieldState, setFieldState]: [Record<string, boolean>, Dispatch<SetStateAction<Record<string, boolean>>>],
   t: TFunction,
   fieldName: string,
   setUnlockedFields: (fieldName: string, val: boolean | undefined) => void,
   options = { simple: false }
 ) => {
+  const isLocked = fieldState[fieldName];
   const stateText = t(isLocked ? "locked" : "unlocked");
   const tooltipText = t(
     `${isLocked ? "locked" : "unlocked"}_fields_${isManagedEventType ? "admin" : "member"}_description`
@@ -60,11 +63,7 @@ export const LockedIndicator = (
             )}>
             {!options.simple && (
               <span className="inline-flex">
-                {isLocked ? (
-                  <Lock className="text-subtle h-3 w-3" />
-                ) : (
-                  <Unlock className="text-subtle h-3 w-3" />
-                )}
+                <Icon name={isLocked ? "lock" : "lock-open"} className="text-subtle h-3 w-3" />
                 <span className="ml-1 font-medium">{stateText}</span>
               </span>
             )}
@@ -72,7 +71,10 @@ export const LockedIndicator = (
               <Switch
                 data-testid={`locked-indicator-${fieldName}`}
                 onCheckedChange={(enabled) => {
-                  setIsLocked(enabled);
+                  setFieldState({
+                    ...fieldState,
+                    [fieldName]: enabled,
+                  });
                   setUnlockedFields(fieldName, !enabled || undefined);
                 }}
                 checked={isLocked}
@@ -96,7 +98,7 @@ const useLockedFieldsManager = ({
   formMethods: UseFormReturn<FormValues>;
 }) => {
   const { setValue, getValues } = formMethods;
-  const fieldStates: Record<string, [boolean, Dispatch<SetStateAction<boolean>>]> = {};
+  const [fieldStates, setFieldStates] = useState<Record<string, boolean>>({});
   const unlockedFields =
     (eventType.metadata?.managedEventConfig?.unlockedFields !== undefined &&
       eventType.metadata?.managedEventConfig?.unlockedFields) ||
@@ -128,28 +130,31 @@ const useLockedFieldsManager = ({
 
   const getLockedInitState = (fieldName: string): boolean => {
     let locked = isManagedEventType || isChildrenManagedEventType;
-    const unlockedFieldList = getValues("metadata")?.managedEventConfig?.unlockedFields;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    const fieldIsUnlocked = unlockedFieldList && unlockedFieldList[fieldName] === true;
+
     if (fieldName.includes(".")) {
       locked = locked && get(unlockedFields, fieldName) === undefined;
     } else {
+      type FieldName = string;
+      const unlockedFieldList = getValues("metadata")?.managedEventConfig?.unlockedFields as
+        | Record<FieldName, boolean>
+        | undefined;
+      const fieldIsUnlocked = !!unlockedFieldList?.[fieldName];
       locked = locked && !fieldIsUnlocked;
     }
     return locked;
   };
 
   const useShouldLockIndicator = (fieldName: string, options?: { simple: true }) => {
-    if (!fieldStates[fieldName]) {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      fieldStates[fieldName] = useState(getLockedInitState(fieldName));
+    if (typeof fieldStates[fieldName] === "undefined") {
+      setFieldStates({
+        ...fieldStates,
+        [fieldName]: getLockedInitState(fieldName),
+      });
     }
-
     return LockedIndicator(
       isChildrenManagedEventType,
       isManagedEventType,
-      fieldStates[fieldName],
+      [fieldStates, setFieldStates],
       translate,
       fieldName,
       setUnlockedFields,
@@ -158,12 +163,13 @@ const useLockedFieldsManager = ({
   };
 
   const useLockedLabel = (fieldName: string, options?: { simple: true }) => {
-    if (!fieldStates[fieldName]) {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      fieldStates[fieldName] = useState(getLockedInitState(fieldName));
+    if (typeof fieldStates[fieldName] === "undefined") {
+      setFieldStates({
+        ...fieldStates,
+        [fieldName]: getLockedInitState(fieldName),
+      });
     }
-    const isLocked = fieldStates[fieldName][0];
-
+    const isLocked = fieldStates[fieldName];
     return {
       disabled:
         !isManagedEventType &&
@@ -175,19 +181,22 @@ const useLockedFieldsManager = ({
   };
 
   const useLockedSwitch = (fieldName: string, options = { simple: false }) => {
-    if (!fieldStates[fieldName]) {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      fieldStates[fieldName] = useState(getLockedInitState(fieldName));
+    if (typeof fieldStates[fieldName] === "undefined") {
+      setFieldStates({
+        ...fieldStates,
+        [fieldName]: getLockedInitState(fieldName),
+      });
     }
-
     return () =>
-      LockedSwitch(isManagedEventType, fieldStates[fieldName], fieldName, setUnlockedFields, options);
+      LockedSwitch(isManagedEventType, [fieldStates, setFieldStates], fieldName, setUnlockedFields, options);
   };
 
   const useShouldLockDisableProps = (fieldName: string, options?: { simple: true }) => {
-    if (!fieldStates[fieldName]) {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      fieldStates[fieldName] = useState(getLockedInitState(fieldName));
+    if (typeof fieldStates[fieldName] === "undefined") {
+      setFieldStates({
+        ...fieldStates,
+        [fieldName]: getLockedInitState(fieldName),
+      });
     }
     return {
       disabled:
@@ -195,7 +204,7 @@ const useLockedFieldsManager = ({
         eventType.metadata?.managedEventConfig !== undefined &&
         unlockedFields[fieldName as keyof Omit<Prisma.EventTypeSelect, "id">] === undefined,
       LockedIcon: useShouldLockIndicator(fieldName, options),
-      isLocked: fieldStates[fieldName][0],
+      isLocked: fieldStates[fieldName],
     };
   };
 

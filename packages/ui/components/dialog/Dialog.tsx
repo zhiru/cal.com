@@ -1,18 +1,19 @@
+"use client";
+
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo } from "react";
-import type { ReactNode, ForwardRefExoticComponent, ReactElement } from "react";
-import React, { useState } from "react";
+import type { ForwardRefExoticComponent, ReactElement, ReactNode } from "react";
+import React, { useMemo, useState } from "react";
 
-import { useIsPlatform, Dialog as PlatformDialogPrimitives } from "@calcom/atoms/monorepo";
+import { Dialog as PlatformDialogPrimitives, useIsPlatform } from "@calcom/atoms/monorepo";
 import classNames from "@calcom/lib/classNames";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import type { SVGComponent } from "@calcom/types/SVGComponent";
-import type { LucideIcon } from "@calcom/ui/components/icon";
 
-import type { ButtonProps } from "../../components/button";
-import { Button } from "../../components/button";
+import type { ButtonProps } from "../button";
+import { Button } from "../button";
+import type { IconName } from "../icon";
+import { Icon } from "../icon";
 
 export type DialogProps = React.ComponentProps<(typeof DialogPrimitive)["Root"]> & {
   name?: string;
@@ -86,13 +87,30 @@ type DialogContentProps = React.ComponentProps<(typeof DialogPrimitive)["Content
   description?: string | JSX.Element | null;
   closeText?: string;
   actionDisabled?: boolean;
-  Icon?: SVGComponent | LucideIcon;
+  Icon?: IconName;
   enableOverflow?: boolean;
+  forceOverlayWhenNoModal?: boolean;
+  /**
+   * Disables the ability to close the dialog by clicking outside of it. Could be useful when the dialog is doing something critical which might be in progress.
+   */
+  preventCloseOnOutsideClick?: boolean;
 };
 
 // enableOverflow:- use this prop whenever content inside DialogContent could overflow and require scrollbar
 export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ children, title, Icon, enableOverflow, type = "creation", ...props }, forwardedRef) => {
+  (
+    {
+      children,
+      title,
+      Icon: icon,
+      enableOverflow,
+      forceOverlayWhenNoModal,
+      type = "creation",
+      preventCloseOnOutsideClick,
+      ...props
+    },
+    forwardedRef
+  ) => {
     const isPlatform = useIsPlatform();
     const [Portal, Overlay, Content] = useMemo(
       () =>
@@ -107,9 +125,18 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
     );
     return (
       <Portal>
-        <Overlay className="fadeIn fixed inset-0 z-50 bg-neutral-800 bg-opacity-70 transition-opacity dark:bg-opacity-70 " />
+        {forceOverlayWhenNoModal ? (
+          <div className="fadeIn fixed inset-0 z-50 bg-neutral-800 bg-opacity-70 transition-opacity dark:bg-opacity-70 " />
+        ) : (
+          <Overlay className="fadeIn fixed inset-0 z-50 bg-neutral-800 bg-opacity-70 transition-opacity dark:bg-opacity-70 " />
+        )}
         <Content
           {...props}
+          onPointerDownOutside={(e) => {
+            if (preventCloseOnOutsideClick) {
+              e.preventDefault();
+            }
+          }}
           className={classNames(
             "fadeIn bg-default scroll-bar fixed left-1/2 top-1/2 z-50 w-full max-w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-md text-left shadow-xl focus-visible:outline-none sm:align-middle",
             props.size == "xl"
@@ -134,12 +161,12 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
           )}
           {type === "confirmation" && (
             <div className="flex">
-              {Icon && (
-                <div className="bg-emphasis mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full">
-                  <Icon className="text-emphasis h-4 w-4" />
+              {icon && (
+                <div className="bg-emphasis flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                  <Icon name={icon} className="text-emphasis h-4 w-4" />
                 </div>
               )}
-              <div className="w-full">
+              <div className="ml-4 flex-grow">
                 <DialogHeader title={title} subtitle={props.description} />
                 <div data-testid="dialog-confirmation">{children}</div>
               </div>
@@ -168,7 +195,7 @@ export function DialogHeader(props: DialogHeaderProps) {
         id="modal-title">
         {props.title}
       </h3>
-      {props.subtitle && <div className="text-subtle text-sm">{props.subtitle}</div>}
+      {props.subtitle && <p className="text-subtle text-sm">{props.subtitle}</p>}
     </div>
   );
 }
@@ -176,11 +203,12 @@ export function DialogHeader(props: DialogHeaderProps) {
 type DialogFooterProps = {
   children: React.ReactNode;
   showDivider?: boolean;
+  noSticky?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export function DialogFooter(props: DialogFooterProps) {
   return (
-    <div className={classNames("bg-default sticky bottom-0", props.className)}>
+    <div className={classNames("bg-default bottom-0", props?.noSticky ? "" : "sticky", props.className)}>
       {props.showDivider && (
         // TODO: the -mx-8 is causing overflow in the dialog buttons
         <hr data-testid="divider" className="border-subtle -mx-8" />
@@ -244,7 +272,7 @@ export function DialogClose(
         data-testid={props["data-testid"] || "dialog-rejection"}
         color={props.color || "minimal"}
         {...props}>
-        {props.children ? props.children : t("Close")}
+        {props.children ? props.children : t("close")}
       </Button>
     </Close>
   );

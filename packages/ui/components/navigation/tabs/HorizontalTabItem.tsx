@@ -3,10 +3,10 @@ import Link from "next/link";
 import classNames from "@calcom/lib/classNames";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useUrlMatchesCurrentUrl } from "@calcom/lib/hooks/useUrlMatchesCurrentUrl";
-import type { SVGComponent } from "@calcom/types/SVGComponent";
-import type { LucideIcon } from "@calcom/ui/components/icon";
 
 import { Avatar } from "../../avatar";
+import { Icon } from "../../icon";
+import type { IconName } from "../../icon";
 import { SkeletonText } from "../../skeleton";
 
 export type HorizontalTabItemProps = {
@@ -17,8 +17,10 @@ export type HorizontalTabItemProps = {
   href: string;
   linkShallow?: boolean;
   linkScroll?: boolean;
-  icon?: SVGComponent | LucideIcon;
+  icon?: IconName;
   avatar?: string;
+  onClick?: (name: string) => void;
+  isActive?: boolean;
 };
 
 const HorizontalTabItem = function ({
@@ -31,10 +33,16 @@ const HorizontalTabItem = function ({
 }: HorizontalTabItemProps) {
   const { t, isLocaleReady } = useLocale();
 
-  const isCurrent = useUrlMatchesCurrentUrl(href);
+  const isCurrent = useUrlMatchesCurrentUrl(href) || props?.isActive;
 
   return (
     <Link
+      onClick={(e) => {
+        if (props.onClick) {
+          e.preventDefault();
+          props.onClick(name);
+        }
+      }}
       key={name}
       href={href}
       shallow={linkShallow}
@@ -49,9 +57,8 @@ const HorizontalTabItem = function ({
       data-testid={`horizontal-tab-${name}`}
       aria-current={isCurrent ? "page" : undefined}>
       {props.icon && (
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        <props.icon
+        <Icon
+          name={props.icon}
           className={classNames(
             isCurrent ? "text-emphasis" : "group-hover:text-subtle text-muted",
             "-ml-0.5 hidden h-4 w-4 ltr:mr-2 rtl:ml-2 sm:inline-block"

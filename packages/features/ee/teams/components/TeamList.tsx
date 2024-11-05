@@ -1,12 +1,14 @@
 import { useState } from "react";
 
-import { ORG_SELF_SERVE_ENABLED } from "@calcom/lib/constants";
+import {
+  ORG_SELF_SERVE_ENABLED,
+  ORG_MINIMUM_PUBLISHED_TEAMS_SELF_SERVE_HELPER_DIALOGUE,
+} from "@calcom/lib/constants";
 import { trackFormbricksAction } from "@calcom/lib/formbricks-client";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
-import { Card, showToast } from "@calcom/ui";
-import { UserPlus, Building, LineChart, Paintbrush, Users, Edit } from "@calcom/ui/components/icon";
+import { Card, Icon, showToast } from "@calcom/ui";
 
 import TeamListItem from "./TeamListItem";
 
@@ -56,15 +58,15 @@ export default function TeamList(props: Props) {
       {ORG_SELF_SERVE_ENABLED &&
         !props.pending &&
         !isUserAlreadyInAnOrganization &&
-        props.teams.length > 2 &&
+        props.teams.length >= ORG_MINIMUM_PUBLISHED_TEAMS_SELF_SERVE_HELPER_DIALOGUE &&
         props.teams.map(
           (team, i) =>
             team.role !== "MEMBER" &&
             i === 0 && (
-              <div className="bg-subtle p-4">
+              <div className="bg-subtle p-4" key={team.id}>
                 <div className="grid-col-1 grid gap-2 md:grid-cols-3">
                   <Card
-                    icon={<Building className="h-5 w-5 text-red-700" />}
+                    icon={<Icon name="building" className="h-5 w-5 text-red-700" />}
                     variant="basic"
                     title={t("You have a lot of teams")}
                     description={t(
@@ -73,11 +75,11 @@ export default function TeamList(props: Props) {
                     actionButton={{
                       href: `/settings/organizations/new`,
                       child: t("set_up_your_organization"),
-                      "data-testId": "setup_your_org_action_button",
+                      "data-testid": "setup_your_org_action_button",
                     }}
                   />
                   <Card
-                    icon={<Paintbrush className="h-5 w-5 text-orange-700" />}
+                    icon={<Icon name="paintbrush" className="h-5 w-5 text-orange-700" />}
                     variant="basic"
                     title={t("Get a clean subdomain")}
                     description={t(
@@ -89,7 +91,7 @@ export default function TeamList(props: Props) {
                     }}
                   />
                   <Card
-                    icon={<LineChart className="h-5 w-5 text-green-700" />}
+                    icon={<Icon name="chart-line" className="h-5 w-5 text-green-700" />}
                     variant="basic"
                     title={t("Admin tools and analytics")}
                     description={t(
@@ -126,7 +128,7 @@ export default function TeamList(props: Props) {
                   <h3 className="text-emphasis mb-4 text-sm font-semibold">{t("recommended_next_steps")}</h3>
                   <div className="grid-col-1 grid gap-2 md:grid-cols-3">
                     <Card
-                      icon={<UserPlus className="h-5 w-5 text-green-700" />}
+                      icon={<Icon name="user-plus" className="h-5 w-5 text-green-700" />}
                       variant="basic"
                       title={t("invite_team_member")}
                       description={t("meetings_are_better_with_the_right")}
@@ -136,7 +138,7 @@ export default function TeamList(props: Props) {
                       }}
                     />
                     <Card
-                      icon={<Users className="h-5 w-5 text-orange-700" />}
+                      icon={<Icon name="users" className="h-5 w-5 text-orange-700" />}
                       variant="basic"
                       title={t("collective_or_roundrobin")}
                       description={t("book_your_team_members")}
@@ -146,7 +148,7 @@ export default function TeamList(props: Props) {
                       }}
                     />
                     <Card
-                      icon={<Edit className="h-5 w-5 text-purple-700" />}
+                      icon={<Icon name="pencil" className="h-5 w-5 text-purple-700" />}
                       variant="basic"
                       title={t("appearance")}
                       description={t("appearance_description")}

@@ -79,12 +79,25 @@ export const bookingsProcedure = authedProcedure
               /* Or part of a collective booking */
               {
                 eventType: {
-                  schedulingType: SchedulingType.COLLECTIVE,
-                  users: {
-                    some: {
-                      id: ctx.user.id,
-                    },
+                  schedulingType: {
+                    in: [SchedulingType.COLLECTIVE, SchedulingType.ROUND_ROBIN],
                   },
+                  OR: [
+                    {
+                      users: {
+                        some: {
+                          id: ctx.user.id,
+                        },
+                      },
+                    },
+                    {
+                      hosts: {
+                        some: {
+                          id: ctx.user.id,
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             ],

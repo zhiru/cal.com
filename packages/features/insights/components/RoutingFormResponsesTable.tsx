@@ -195,9 +195,11 @@ export function RoutingFormResponsesTable() {
               </Badge>
             );
 
-          let badgeVariant: BadgeProps["variant"] = "default";
+          let badgeVariant: BadgeProps["variant"] = "success";
           switch (booking.status) {
             case BookingStatus.REJECTED:
+            case BookingStatus.AWAITING_HOST:
+            case BookingStatus.PENDING:
             case BookingStatus.CANCELLED:
               badgeVariant = "warning";
               break;
